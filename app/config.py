@@ -1,5 +1,6 @@
+"""Import configs into global variables"""
 import configparser
-# Import configs into global variables
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 

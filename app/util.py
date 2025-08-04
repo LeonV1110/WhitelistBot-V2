@@ -1,11 +1,14 @@
-from app.exceptions import InvalidSteam64ID, InvalidDiscordID
-from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player, PlayerNotFound
-from app import config as cfg
-from pymysql import Connection
-from discord import Interaction, Embed
-from pymysql import OperationalError
-from app.exceptions import MyException
+"""A collection of utility functions"""
+import pymysql
+
+from pymysql import Connection, OperationalError
+from discord import Interaction, Embed, Intents
 from discord.app_commands.errors import MissingRole
+from discord.ext.commands import Bot
+from discord.ui import View
+from app import config as cfg
+from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound
+from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player
 
 def check_steam64ID(steam64ID: str):
     #check if int
@@ -19,10 +22,10 @@ def check_steam64ID(steam64ID: str):
         raise InvalidSteam64ID("This is Gabe Newell's steam64ID, please make sure to enter the correct one.")
     #check if first numbers match
     if (not steam64ID[0:7] == "7656119"):
-       raise InvalidSteam64ID("This is not a valid steam64ID.")
+        raise InvalidSteam64ID("This is not a valid steam64ID.")
     #check the length
     if (len(steam64ID) < 17):
-       raise InvalidSteam64ID("This is not a valid steam64ID, as it is shorter than 17 characters.")
+        raise InvalidSteam64ID("This is not a valid steam64ID, as it is shorter than 17 characters.")
     if (len(steam64ID) > 17):
         raise InvalidSteam64ID("This is not a valid steam64ID, as it is longer than 17 characters.")
     return 
@@ -100,3 +103,16 @@ def command_error_embed_gen(error: Exception) -> Embed:
         print("---------------------------------------")
         error_str = "Some unknown error occured, please ping your sys admin"
     return Embed(title=error_str)
+
+def connect_database() -> pymysql.connections.Connection:
+    connection = pymysql.connect(host=cfg.DATABASEHOST, port = int(cfg.DATABASEPORT), user = cfg.DATABASEUSER, password= cfg.DATABASEPSW, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor, database=cfg.DATABASENAME)
+    return connection
+
+def create_bot(views : list[View] = []) -> Bot:
+    intents = Intents.default()
+    intents.members = True
+    intents.message_content = True #TODO Likely not needed
+    bot = Bot(command_prefix='!', intents=intents)
+    for view in views:
+        bot.add_view(view)
+    return bot

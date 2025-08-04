@@ -29,7 +29,7 @@ class WhitelistOrder():
             cursor.execute(sql, vars)
 
         owner_whitelist = Whitelist(self.BOTID, self.orderID)
-        owner_whitelist.insert_whitelist()
+        owner_whitelist.insert_whitelist(connection)
         return
 
     def update_order_tier(self, connection: Connection, tier:str):
@@ -147,7 +147,7 @@ class DatabaseWhitelistOrder(WhitelistOrder):
         return wl_list
 
 class OrderIDWhitelistOrder(WhitelistOrder):
-    def __init__(self, orderID, connection: Connection):
+    def __init__(self, connection: Connection, orderID: str):
         sql = "SELECT * FROM `whitelist_order` WHERE `orderID` = %s"
         vars = (orderID)
         with connection.cursor() as cursor:
@@ -155,7 +155,7 @@ class OrderIDWhitelistOrder(WhitelistOrder):
             res = cursor.fetchone()
         BOTID = res['BOTID']
         tier = res['tier']
-        whitelists = DatabaseWhitelistOrder.get_all_whitelists(orderID)
+        whitelists = DatabaseWhitelistOrder.get_all_whitelists(connection, orderID)
         active = res['active']
 
         super().__init__(BOTID, orderID, tier, whitelists, active)

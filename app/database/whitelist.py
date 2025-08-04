@@ -1,13 +1,15 @@
+"""Whitelist class"""
 from pymysql.connections import Connection
 
 
 class Whitelist():
+    """Represents the Whitelist table in the database"""
     BOTID: str
     orderID: str
 
     def __eq__(self, __o: object) -> bool:
         return self.__dict__ == __o.__dict__
-    
+
     def __init__(self, BOTID: str, orderID: str):
         self.BOTID = BOTID
         self.orderID = orderID

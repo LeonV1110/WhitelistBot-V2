@@ -1,12 +1,14 @@
+"""Permission class"""
 from pymysql.connections import Connection
 
 class Permission():
+    """Represents the Permission table in the database"""
     BOTID: str
     permission: str
 
     def __eq__(self, __o: object) -> bool:
         return self.__dict__ == __o.__dict__
-        
+
     def __init__(self, BOTID: str, permission: str):
         self.BOTID = BOTID
         self.permission = permission
@@ -33,7 +35,3 @@ class Permission():
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
         return
-    
-class DatabasePermission(Permission):
-    def __init__(self, BOTID, permission):
-        super().__init__(BOTID, permission)

@@ -1,10 +1,14 @@
-import random
-from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
-from app.database.permission import Permission
+"""Player class and subclasses"""
+
 from pymysql.connections import Connection
-from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord, PlayerNotFound
+from app.database.permission import Permission
+from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
+from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
+
+
 
 class Player():
+    """Represents the Player table in the database"""
     BOTID: str
     steam64ID: str
     discordID: str
@@ -25,7 +29,7 @@ class Player():
 
     def __eq__(self, __o: object) -> bool:
         return self.__dict__ == __o.__dict__
-    
+
     def insert_player(self, connection: Connection):
         # check for duplicate player
         sql = "INSERT INTO `player` (`BOTID`, `steam64ID`, `discordID`, `name`, `patreonID`) VALUES (%s, %s, %s, %s, %s)"
@@ -37,7 +41,7 @@ class Player():
         if self.permission is not None:
             self.permission.insert_permission(connection)
         return
-    
+
     def delete_player(self, connection: Connection):
         if self.whitelist_order is not None:
             self.whitelist_order.delete_order()
@@ -55,7 +59,7 @@ class Player():
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
         return
-    
+
     def update_player(self, connection: Connection, steam64ID:str=None, discordID:str=None, name:str=None, permission_str:str = None, tier:str = None):
         if steam64ID is None:
             steam64ID = self.steam64ID
@@ -84,7 +88,7 @@ class Player():
     def add_whitelist_order(self, tier, connection: Connection):
         self.whitelist_order = NewWhitelistOrder(self.BOTID, tier, connection)
         self.whitelist_order.insert_order(connection)
-    
+
     def update_whitelist_order(self, tier, connection: Connection):
         self.whitelist_order.update_order_tier(tier, connection)
 
@@ -97,7 +101,7 @@ class Player():
             whitelistTable = cursor.fetchone()
         if whitelistTable:
             orderID = whitelistTable['orderID']
-            whitelistOrder = OrderIDWhitelistOrder(orderID, connection)
+            whitelistOrder = OrderIDWhitelistOrder(connection, orderID)
             return bool(whitelistOrder.active)
         else: return False
 
@@ -120,7 +124,8 @@ class Player():
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
-        if bool(res): raise DuplicatePlayerPresentDiscord("You have already registered, if you want to update your Steam64 ID use the command /change_steam64id.")
+        if bool(res): 
+            raise DuplicatePlayerPresentDiscord("You have already registered, if you want to update your Steam64 ID use the command /change_steam64id.")
         else: return
 
     def check_for_duplicate_player_in_DB(self, steam64ID, connection: Connection):
@@ -132,7 +137,7 @@ class Player():
         if bool(res):
             raise DuplicatePlayerPresentSteam()
         return
-    
+
     #checks who's whitelist order you're on, and returns their BOTID
     def check_whos_whitelist_order(self, connection: Connection):
         if self.whitelist_order is not None:
@@ -145,7 +150,7 @@ class Player():
                 whitelistTable = cursor.fetchone()
             if whitelistTable:
                 orderID = whitelistTable['OrderID']
-                whitelistOrder = OrderIDWhitelistOrder(orderID)
+                whitelistOrder = OrderIDWhitelistOrder(connection, orderID)
                 return whitelistOrder.BOTID
             else:
                 return "No whitelist" #TODO maybe raise an WhitelistNotFound error instead
@@ -173,10 +178,12 @@ class NewPlayer(Player):
             permission = None
         if whitelist_tier is not None:
             whitelist_order = NewWhitelistOrder(BOTID=BOTID, tier=whitelist_tier, connection=connection)
+        else: 
+            whitelist_order = None
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
 
 class DatabasePlayer(Player):
-    def __init__(sel, discordID: str, connection: Connection):
+    def __init__(self, discordID: str, connection: Connection):
 
         sql = "SELECT * FROM `player` WHERE `discordID` = %s"
         vars = (discordID)
@@ -193,10 +200,10 @@ class DatabasePlayer(Player):
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
 
 class SteamPlayer(Player):
-    def __init__(sel, steam64ID: str, connection: Connection):
+    def __init__(self, steam64ID: str, connection: Connection):
 
         sql = "SELECT * FROM `player` WHERE `steam64ID` = %s"
-        vars = (discordID)
+        vars = (steam64ID)
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
@@ -210,10 +217,10 @@ class SteamPlayer(Player):
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
 
 class BOTIDPlayer(Player):
-    def __init__(sel, BOTID: str, connection: Connection):
+    def __init__(self, BOTID: str, connection: Connection):
 
         sql = "SELECT * FROM `player` WHERE `BOTID` = %s"
-        vars = (discordID)
+        vars = (BOTID)
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
@@ -224,4 +231,3 @@ class BOTIDPlayer(Player):
         whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
 
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
-

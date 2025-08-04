@@ -1,22 +1,22 @@
+"""Contians all modals"""
 from discord import Embed, TextStyle, Interaction
 from discord.ext.commands import Context
 from discord.ui import Modal, TextInput
 from app import command_logic as cl
-from app.database.database import connect_database
-from app.util import command_error_handler
+from app.util import command_error_handler, connect_database
 
 class RegisterModal(Modal):
     def __init__(self):
         super().__init__(title='Register',timeout=600)
-    
+
     steam64ID = TextInput(
-            label= 'Please provide your Steam64ID.', 
-            placeholder='76561198029817168', 
-            style=TextStyle.short, 
+            label= 'Please provide your Steam64ID.',
+            placeholder='76561198029817168',
+            style=TextStyle.short,
             max_length=19)
 
     async def on_submit(self, ctx: Context):
-        print(f"we are registering a player with id: {self.steam64ID}") 
+        print(f"we are registering a player with id: {self.steam64ID}")
         with connect_database() as connection:
             cl.register_player(connection, member=ctx.author, steam64ID=str(self.steam64ID))
         await ctx.send(embed=Embed(title='Registration was successful'), ephemeral=True)
@@ -47,7 +47,7 @@ class AddFriendModal(Modal):
 class UpdateSteamIDModal(Modal):
     def __init__(self):
         super().__init__(title='Change your steam64ID', timeout=600)
-        
+
     new_steam64ID = TextInput(
             label= 'Please provide your new Steam64ID.',
             placeholder='76561198029817168',
@@ -85,9 +85,8 @@ class RemoveDataModal(Modal):
                 cl.remove_player(connection=connection, member = ctx.author)
         else: 
             embed = Embed(title='Nothing happened, and your data is still in the database.')
-        
-        await ctx.send(embed=embed, ephemeral=True)
 
+        await ctx.send(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)

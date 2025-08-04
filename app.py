@@ -1,15 +1,17 @@
-from app import bot_setup as bsp, config as cfg
-from discord.ext.commands import Bot
-from discord.ext import commands
-from discord import Embed, Colour, Interaction
-from discord.app_commands.errors import MissingRole
-from discord.member import Member
-from app.views.explain_embed_view import ExplainEmbedView
+"""Main entry into the discordbot
+    Defines all commands and events"""
 import discord
+
+from discord import Embed, Colour, Interaction
+from discord.member import Member
+
+from app import config as cfg
+from app.views.explain_embed_view import ExplainEmbedView
 import app.command_logic as cl
-from app.database.database import connect_database
-from app.util import command_error_handler, command_error_embed_gen, get_player
-bot = bsp.create_bot()
+from app.util import command_error_handler, command_error_embed_gen, get_player, connect_database, create_bot
+
+
+bot = create_bot()
 
 guilds = []
 for guild_id in cfg.GUILD_IDS:
@@ -25,12 +27,10 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
     bot.add_view(ExplainEmbedView())
     try:
-        guild = discord.Object(id = cfg.GUILD_IDS[0])
-        synced = await bot.tree.sync(guild=guild)
+        synced = await bot.tree.sync(guilds=guilds)
         print(f'Synced {len(synced)} cmds')
     except Exception as e:
         print(e)
-        pass
 
 @bot.event
 async def on_member_update(before: Member, after: Member) -> None:
@@ -41,7 +41,7 @@ async def on_member_update(before: Member, after: Member) -> None:
 @bot.event
 async def on_raw_member_remove(payload) -> None:
     with connect_database() as connection:
-        cl.deactivate_whitelist_order(connection, member = payload.user) #TODO may assume roles are present when updating user
+        cl.deactivate_whitelist_order(connection, member = payload.user)
     return
 
 @bot.event
@@ -124,7 +124,7 @@ async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
 @discord.app_commands.checks.has_role(cfg.DELETE_ROLE)
 async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) -> None:
     await inter.response.defer()
-    with connect_database as connection:
+    with connect_database() as connection:
         discord_player = get_player(connection, discordID=discordid)
         steam_player = get_player(connection, steam64ID=steam64id)
         if discord_player == steam_player:
