@@ -6,7 +6,9 @@ from discord.app_commands.errors import MissingRole
 from discord.member import Member
 from app.views.explain_embed_view import ExplainEmbedView
 import discord
-
+import app.command_logic as cl
+from app.database.database import connect_database
+from app.util import command_error_handler, command_error_embed_gen, get_player
 bot = bsp.create_bot()
 
 guilds = []
@@ -14,6 +16,9 @@ for guild_id in cfg.GUILD_IDS:
     guild = discord.Object(id = guild_id)
     guilds.append(guild)
 
+#############################
+########   Events    ########
+#############################
 
 @bot.event
 async def on_ready():
@@ -29,23 +34,115 @@ async def on_ready():
 
 @bot.event
 async def on_member_update(before: Member, after: Member) -> None:
-    #TODO update player
+    with connect_database() as connection:
+        cl.update_player_from_member(connection, member=after)
     return
 
 @bot.event
-async def on_member_remove(member: Member) -> None:
-    #TODO update player
+async def on_raw_member_remove(payload) -> None:
+    with connect_database() as connection:
+        cl.deactivate_whitelist_order(connection, member = payload.user) #TODO may assume roles are present when updating user
     return
 
-@bot.tree.command(name="testing", guilds=guilds)
+@bot.event
+async def on_member_join(member: Member):
+    with connect_database() as connection:
+        cl.update_player_from_member(connection, member)
+
+#######################################
+########   TESTING Commands    ########
+#######################################
+
+#@bot.tree.command(name="testing", guilds=guilds)
 async def testing(inter):
     await inter.response.send_message("button", view=ExplainEmbedView())
 
-@bot.tree.command(name= "hello", description='Say Hello!',  guilds=guilds)
-async def sayHello(inter):
-    await inter.response.send_message('Hello')
+#@bot.tree.command(name= "hello", description='Say Hello!',  guilds=guilds)
+async def sayHello(inter, member: Member):
+    await inter.response.defer()
 
-@bot.tree.command(description="Dont worry, don't touch unless you're called Leon.", guilds=guilds)
+    print(type(inter.followup))
+    await inter.followup.send('Hello')
+
+######################################
+########   Player Commands    ########
+######################################
+
+
+
+#####################################
+########   Admin Commands    ########
+#####################################
+
+@bot.tree.command(description="Get player-info on player, prefrence: Member, discordID, steam64ID", guilds=guilds)
+@discord.app_commands.checks.has_role(cfg.ADMIN_ROLE)
+async def admin_get_player_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
+    await inter.response.defer()
+    if member is not None:
+        with connect_database() as connection:
+            embed = cl.get_player_info(connection, member=member)
+    elif discordid is not None:
+        with connect_database() as connection:
+            embed = cl.get_player_info(connection, discordID=discordid)
+    elif steam64id is not None:
+        with connect_database() as connection:
+            embed = cl.get_player_info(connection, steam64ID=steam64id)
+    else:
+        embed = Embed(title='Please use one of the options')
+    await inter.followup.send(embed=embed)
+
+@admin_get_player_info.error
+async def admin_get_player_info_error(inter: Interaction, error: Exception):
+    await inter.followup.send(embed=command_error_embed_gen(error))
+
+@bot.tree.command(description="Get whitelist-info on player, prefrence: Member, discordID, steam64ID", guilds=guilds)
+@discord.app_commands.checks.has_role(cfg.ADMIN_ROLE)
+async def admin_get_whitelist_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
+    await inter.response.defer()
+    if member is not None:
+        with connect_database() as connection:
+            embed = cl.get_whitelist_info(connection, member=member)
+    elif discordid is not None:
+        with connect_database() as connection:
+            embed = cl.get_whitelist_info(connection, discordID=discordid)
+    elif steam64id is not None:
+        with connect_database() as connection:
+            embed = cl.get_whitelist_info(connection, steam64ID=steam64id)
+    else:
+        embed = Embed(title='Please use one of the options')
+    await inter.followup.send(embed=embed)
+
+@admin_get_whitelist_info.error
+async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
+    await inter.followup.send(embed=command_error_embed_gen(error))
+
+######################################
+########   Delete Commands    ########
+######################################
+
+@bot.tree.command(description="Removes a player from the database, including their whitelist order and any whitelists on that order", guilds = guilds)
+@discord.app_commands.checks.has_role(cfg.DELETE_ROLE)
+async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) -> None:
+    await inter.response.defer()
+    with connect_database as connection:
+        discord_player = get_player(connection, discordID=discordid)
+        steam_player = get_player(connection, steam64ID=steam64id)
+        if discord_player == steam_player:
+            cl.remove_player(connection, discordID=discordid)
+            embed = Embed(title = f"{discord_player.name} has been successfully deleted from the database.")
+        else:
+            embed = Embed(title = f"The discordID is from {discord_player.name} while the steamId is from {steam_player.name}. Double check and try again. If the issue persists you can annoy Leon I guess...")
+    await inter.followup.send(embed=embed)
+
+@admin_nuke_player.error
+async def admin_nuke_player_info_error(inter: Interaction, error: Exception):
+    await inter.followup.send(embed=command_error_embed_gen(error))
+
+#########################################
+########   Sys admin Commands    ########
+#########################################
+
+@bot.tree.command(description="Dont worry, don't touch unless you're the sys admin", guilds=guilds)
 @discord.app_commands.checks.has_role(cfg.EXPLAIN_EMBED_ROLE)
 async def explain_embed_setup(inter):
     await inter.response.defer()
@@ -99,10 +196,7 @@ async def explain_embed_setup(inter):
 
 @explain_embed_setup.error
 async def explain_embed_setup_error(inter: Interaction, error):
-    if isinstance(error, MissingRole):
-        await inter.response.send_message(embed=Embed(title='You do not have the required roles to use this command'), ephemeral=True)
-    else:
-        raise error
+    await command_error_handler(inter, error)
 
 if __name__ == "__main__":
     bot.run(cfg.TOKEN)

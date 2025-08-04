@@ -3,14 +3,13 @@ from discord import Interaction, ButtonStyle, Embed
 from app.modals import RegisterModal, AddFriendModal, UpdateSteamIDModal, RemoveDataModal, RemoveFriendModal
 from app.exceptions import MyException
 from pymysql import OperationalError
+from app.util import command_error_handler
+import app.command_logic as cl
+from app.database.database import connect_database
 
 class ExplainEmbedView(View):
     def __init__(self):
         super().__init__(timeout=None)
-
-    #@button(label= "testing", custom_id="testing12")
-    #async def something(self, inter: Interaction, button: Button):
-    #    await inter.response.send_message("It worked!")
 
     @button(style = ButtonStyle.primary,label='Register', custom_id='embed:register')
     async def register(self, inter: Interaction, button: Button):
@@ -27,48 +26,33 @@ class ExplainEmbedView(View):
     @button(style=ButtonStyle.secondary, label='Get My Info', custom_id='embed:get_player_info')
     async def get_player_info(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
-
         try:
-            embed = Embed(title='player info placeholder')
-            #embed = cl.get_player_info(member = inter.author) #TODO
-        except MyException as error:
-            embed = Embed(title= error.message)
-        except OperationalError:
-            embed = Embed(title= "The bot is currently having issues, please try again later.")
-
+            with connect_database() as connection:
+                embed = cl.get_player_info(connection, member = inter.user[1])
+        except Exception as error:
+            await command_error_handler(inter, error)
         await inter.followup.send(embed= embed, ephemeral=True)
-
 
     @button(style=ButtonStyle.secondary, label='Get My Whitelist Info', custom_id='embed:get_whitelist_info')
     async def get_whitelist_info(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
-
         try:
-            embed = Embed(title='whitelist info placeholder')
-            #embed = cl.get_whitelist_info(member = inter.author) #TODO
-        except MyException as error:
-            embed = Embed(title= error.message)
-        except OperationalError:
-            embed = Embed(title= "The bot is currently having issues, please try again later.")
-
+            with connect_database() as connection:
+                embed = cl.get_whitelist_info(connection, member=inter.user[1])
+        except Exception as error:
+            await command_error_handler(inter, error)
         await inter.followup.send(embed= embed, ephemeral=True)
-
 
     @button(style=ButtonStyle.secondary, label='Update My Data', custom_id='embed:update_data')
     async def update_data(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
-        embed = Embed(title='Your data was successfully updated.')
-
         try:
-            print('updating data')
-            #cl.update_player_from_member(member=inter.author) #TODO
-        except MyException as error:
-            embed = Embed(title= error.message)
-        except OperationalError:
-            embed = Embed(title= "The bot is currently having issues, please try again later.")
-
-        await inter.followup.send(embed= embed, ephemeral=True)
-
+            with connect_database() as connection:
+                cl.update_player_from_member(connection, member= inter.user[1])
+        except Exception as error:
+            await command_error_handler(inter, error)
+        await inter.followup.send(embed = Embed(title='Your data was successfully updated.'), ephemeral=True)
+    
     @button(style = ButtonStyle.red, label='Delete My Data', custom_id='embed:remove_data')
     async def remove_data(self, inter:Interaction, button: Button):
         await inter.response.send_modal(RemoveDataModal())

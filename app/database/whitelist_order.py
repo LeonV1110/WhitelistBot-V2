@@ -2,7 +2,7 @@ import random
 from pymysql.connections import Connection
 from app.database.whitelist import Whitelist
 from app import config as cfg
-from exceptions import InsufficientTier, DuplicatePlayerPresent, SelfDestruct, WhitelistNotFound
+from app.exceptions import InsufficientTier, DuplicatePlayerPresent, SelfDestruct, WhitelistNotFound
 
 class WhitelistOrder():
     BOTID: str
@@ -51,7 +51,10 @@ class WhitelistOrder():
         if not self.active: raise InsufficientTier()
         return
 
-    def update_order_activity(self, connection: Connection):
+    #active is None or a bool
+    def update_order_activity(self, connection: Connection, active:bool = None):
+        if active is not None:
+            self.active = active
         if self.active:
             if len(self.whitelists) > cfg.WHITELIST_ALLOWANCE[self.tier]:
                 self.active = False

@@ -2,6 +2,10 @@ from app.exceptions import InvalidSteam64ID, InvalidDiscordID
 from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player, PlayerNotFound
 from app import config as cfg
 from pymysql import Connection
+from discord import Interaction, Embed
+from pymysql import OperationalError
+from app.exceptions import MyException
+from discord.app_commands.errors import MissingRole
 
 def check_steam64ID(steam64ID: str):
     #check if int
@@ -67,3 +71,32 @@ def convert_role_to_tier(roles):
     for role in roles:
         if role.id in whitelist_roles: return whitelist_roles[role.id]
     return None
+
+async def command_error_handler(inter: Interaction, error):
+    if isinstance(error, MissingRole):
+        await inter.response.send_message(embed=Embed(title='You do not have the required roles to use this command'), ephemeral=True)
+    if isinstance(error, MyException):
+        await inter.response.send_message(error, ephemeral=True)
+    elif isinstance(error, OperationalError):
+        await inter.response.send_message("The bot is currently having issues, please try again later.", ephemeral=True)
+    else:
+        print("---------------------------------------")
+        print(f"an {type(error)} error occured:")
+        print(error)
+        print("---------------------------------------")
+        await inter.response.send_message("Some unknown error occured, please ping your sys admin", ephemeral=True)
+
+def command_error_embed_gen(error: Exception) -> Embed:
+    if isinstance(error, MissingRole):
+        error_str = 'You do not have the required roles to use this command'
+    elif isinstance(error, MyException):
+        error_str = str(error)
+    elif isinstance(error, OperationalError):
+        error_str = "The bot is currently having issues, please try again later."
+    else:
+        print("---------------------------------------")
+        print(f"an {type(error)} error occured:")
+        print(error)
+        print("---------------------------------------")
+        error_str = "Some unknown error occured, please ping your sys admin"
+    return Embed(title=error_str)

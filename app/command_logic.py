@@ -12,6 +12,11 @@ def update_player_from_member(connection: Connection, member: Member):
     name = member.name
     player.update_player(connection, player.steam64ID, discordID, name, permission, tier)
 
+def deactivate_whitelist_order(connection: Connection, member: Member):
+    discordID = str(member.id)
+    player:Player = util.get_player(connection, discordID=discordID)
+    player.whitelist_order.update_order_activity(connection, False)
+
 def register_player(connection: Connection, member:Member, steam64ID: str):
     util.check_steam64ID(steam64ID)
     discordID = str(member.id)

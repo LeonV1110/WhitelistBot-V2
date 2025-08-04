@@ -1,10 +1,9 @@
 from discord import Embed, TextStyle, Interaction
+from discord.ext.commands import Context
 from discord.ui import Modal, TextInput
-from app.exceptions import MyException
-from pymysql import OperationalError
 from app import command_logic as cl
 from app.database.database import connect_database
-
+from app.util import command_error_handler
 
 class RegisterModal(Modal):
     def __init__(self):
@@ -16,22 +15,14 @@ class RegisterModal(Modal):
             style=TextStyle.short, 
             max_length=19)
 
-    
-    async def on_submit(self, inter: Interaction):
-        embed = Embed(title='Registration was successful')
-        try:
-            print(f"we are registering a player with id: {self.steam64ID}") 
-            with connect_database() as connection:
-                cl.register_player(connection, member=inter.author, steam64ID=self.steam64ID)
-        except MyException as error:
-            embed = Embed(title=error.message)
-        except OperationalError:
-            embed = Embed(
-            title="The bot is currently having issues, please try again later.")
-        await inter.response.send_message(embed=embed, ephemeral=True)
+    async def on_submit(self, ctx: Context):
+        print(f"we are registering a player with id: {self.steam64ID}") 
+        with connect_database() as connection:
+            cl.register_player(connection, member=ctx.author, steam64ID=str(self.steam64ID))
+        await ctx.send(embed=Embed(title='Registration was successful'), ephemeral=True)
 
-    async def on_error(self, error: Exception, inter: Interaction):
-        await inter.response.send_message(error, ephemeral=True)
+    async def on_error(self, inter: Interaction, error: Exception):
+        await command_error_handler(inter, error)
 
 class AddFriendModal(Modal):
     def __init__(self):
@@ -44,46 +35,34 @@ class AddFriendModal(Modal):
             max_length=19
             )
 
-    async def on_submit(self, inter: Interaction):
-        embed = Embed(title='Your friend was successfully added')
-        try:
-            print(f"we are registering a friend with id: {self.friend_steam64ID}") 
-            #cl.add_player_to_whitelist(owner_member=inter.author, player_steam64ID=str(steam64ID))
-        except MyException as error:
-            embed = Embed(title=error.message)
-        except OperationalError:
-            embed = Embed(
-            title="The bot is currently having issues, please try again later.")
-        await inter.response.send_message(embed=embed, ephemeral=True)
+    async def on_submit(self, ctx: Context):
+        print(f"we are registering a friend with id: {self.friend_steam64ID}") 
+        with connect_database() as connection:
+            cl.add_player_to_whitelist(connection, owner_member=ctx.author, player_steam64ID=str(self.friend_steam64ID))
+        await ctx.send(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
 
-    async def on_error(self, error: Exception, inter: Interaction):
-        await inter.response.send_message(error, ephemeral=True) #TODO may not work?
+    async def on_error(self, inter: Interaction, error: Exception):
+        await command_error_handler(inter, error)
 
 class UpdateSteamIDModal(Modal):
     def __init__(self):
         super().__init__(title='Change your steam64ID', timeout=600)
+        
     new_steam64ID = TextInput(
             label= 'Please provide your new Steam64ID.',
             placeholder='76561198029817168',
             style=TextStyle.short,
             max_length=19
             )
-    
 
-    async def on_submit(self, inter: Interaction):
-        embed = Embed(title='Your Steam64ID was successfully updated.')
-        try:
-            print(f'{self.new_steam64ID}')
-            #cl.change_steam64ID(inter.author, steam64ID)
-        except MyException as error:
-            embed = Embed(title=error.message)
-        except OperationalError:
-            embed = Embed(
-            title="The bot is currently having issues, please try again later.")
-        await inter.response.send_message(embed=embed, ephemeral=True)
+    async def on_submit(self,  ctx: Context):
+        print(f'We are updating the steam64ID to {self.new_steam64ID}')
+        with connect_database() as connection:
+            cl.change_steam64ID(connection, ctx.author, steam64ID=self.new_steam64ID)
+        await ctx.send(embed = Embed(title='Your Steam64ID was successfully updated.'), ephemeral=True)
 
-    async def on_error(self, error: Exception, inter: Interaction):
-        await inter.response.send_message(error, ephemeral=True)
+    async def on_error(self, inter: Interaction, error: Exception):
+        await command_error_handler(inter, error)
 
 class RemoveDataModal(Modal):
     def __init__(self):
@@ -96,27 +75,22 @@ class RemoveDataModal(Modal):
         max_length=6
     )
 
-    async def on_submit(self, inter: Interaction):
+    async def on_submit(self,  ctx: Context):
         embed = Embed(title='Your information has been successfully deleted')
         message = str(self.delete)
 
         if message == "DELETE":
-            try:
-                print(f'{self.delete}')
-                #cl.remove_player(inter.author)
-            except MyException as error:
-                embed = Embed(title=error.message)
-            except OperationalError:
-                embed = Embed(
-                title="The bot is currently having issues, please try again later.")
+            print(f'We are deleting the account of {ctx.author}')
+            with connect_database() as connection:
+                cl.remove_player(connection=connection, member = ctx.author)
         else: 
             embed = Embed(title='Nothing happened, and your data is still in the database.')
         
-        await inter.response.send_message(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed, ephemeral=True)
 
-    async def on_error(self, error: Exception, inter: Interaction):
-        await inter.response.send_message(error, ephemeral=True)
 
+    async def on_error(self, inter: Interaction, error: Exception):
+        await command_error_handler(inter, error)
 
 class RemoveFriendModal(Modal):
     def __init__(self):
@@ -129,18 +103,12 @@ class RemoveFriendModal(Modal):
             max_length=19
             )
 
-    async def on_submit(self, inter: Interaction):
+    async def on_submit(self,  ctx: Context):
         embed = Embed(title='Your friend was successfully removed')
+        print(f'{self.friend_steamID}')
+        with connect_database() as connection:
+            cl.remove_player_from_whitelist(connection, owner_member=ctx.author, player_steam64ID=self.friend_steamID)
+        await ctx.send(embed=embed, ephemeral=True)
 
-        try:
-            print(f'{self.friend_steamID}')
-            #cl.remove_player_from_whitelist(owner_member=inter.author, player_steam64ID=steam64ID)
-        except MyException as error:
-            embed = Embed(title=error.message)
-        except OperationalError:
-            embed = Embed(
-            title="The bot is currently having issues, please try again later.")
-        await inter.response.send_message(embed=embed, ephemeral=True)
-
-    async def on_error(self, error: Exception, inter: Interaction):
-        await inter.response.send_message(error, ephemeral=True)
+    async def on_error(self, inter: Interaction, error: Exception):
+        await command_error_handler(inter, error)

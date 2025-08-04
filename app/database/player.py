@@ -3,7 +3,7 @@ from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, Data
 from app.database.permission import Permission
 from pymysql.connections import Connection
 from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord, PlayerNotFound
-from app import util
+
 class Player():
     BOTID: str
     steam64ID: str
