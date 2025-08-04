@@ -1,8 +1,6 @@
 from discord.ui import View, button, Button
 from discord import Interaction, ButtonStyle, Embed
 from app.modals import RegisterModal, AddFriendModal, UpdateSteamIDModal, RemoveDataModal, RemoveFriendModal
-from app.exceptions import MyException
-from pymysql import OperationalError
 from app.util import command_error_handler
 import app.command_logic as cl
 from app.database.database import connect_database
