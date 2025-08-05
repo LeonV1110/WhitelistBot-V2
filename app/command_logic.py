@@ -48,7 +48,7 @@ def change_steam64ID(connection: Connection, member: Member, steam64ID: str):
 def get_player_info(connection: Connection, member: Member = None, discordID: str = None, 
                     steam64ID: str = None, BOTID: str = None ) -> Embed:
     if member is not None:
-        discordID = str(member.name)
+        discordID = str(member.id)
     player:Player = util.get_player(connection, discordID, steam64ID, BOTID)
 
     embed = Embed(title=player.name)
@@ -72,7 +72,7 @@ def get_player_info(connection: Connection, member: Member = None, discordID: st
 def get_whitelist_info(connection: Connection, member: Member = None, discordID:str = None, 
                        steam64ID: str = None, BOTID: str = None) -> Embed:
     if member is not None:
-        discordID = str(member.name)
+        discordID = str(member.id)
     player:Player = util.get_player(connection, discordID, steam64ID, BOTID)
     if player.whitelist_order is None:
         return Embed(title="It seems like you don't have a whitelist subscription. Make sure you are subscribed on Patreon and reconnect your discord account to Patreon.")
@@ -95,12 +95,11 @@ def get_whitelist_info(connection: Connection, member: Member = None, discordID:
 
     return embed
 
-def add_player_to_whitelist(connection: Connection, owner_member: Member = None, owner_discordID: str = None, 
-                            owner_steam64ID: str = None, owner_BOTID: str = None, player_discordID: str = None, 
+def add_player_to_whitelist(connection: Connection, owner_member: Member = None, owner_discordID: str = None,
+                            owner_steam64ID: str = None, owner_BOTID: str = None, player_discordID: str = None,
                             player_steam64ID: str = None, player_BOTID: str = None) -> Embed:
     if owner_member is not None:
         owner_discordID = str(owner_member.id)
-
     owner:Player = util.get_player(connection, owner_discordID, owner_steam64ID, owner_BOTID)
     player:Player = util.get_player(connection, player_discordID, player_steam64ID, player_BOTID)
 
@@ -115,9 +114,14 @@ def remove_player_from_whitelist(connection: Connection, owner_member: Member = 
                             player_discordID: str = None, player_steam64ID: str = None, player_BOTID: str = None) -> Embed:
     if owner_member is not None:
         owner_discordID = str(owner_member.id)
-
-    owner:Player = util.get_player(connection, owner_discordID, owner_steam64ID, owner_BOTID)
-    player:Player = util.get_player(connection, player_discordID, player_steam64ID, player_BOTID)
+    try:
+        owner:Player = util.get_player(connection, owner_discordID, owner_steam64ID, owner_BOTID)
+    except PlayerNotFound as e:
+        raise PlayerNotFound("It seems that you have not registered.") from e
+    try:
+        player:Player = util.get_player(connection, player_discordID, player_steam64ID, player_BOTID)
+    except PlayerNotFound as e:
+        raise PlayerNotFound("It seems that your friend has not registered.") from e
 
     if owner.whitelist_order is None:
         return Embed(title="It seems like you don't have a whitelist subscription. " \

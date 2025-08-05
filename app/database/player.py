@@ -3,7 +3,7 @@
 from pymysql.connections import Connection
 from app.database.permission import Permission
 from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
-from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
+from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord, WhitelistOrderNotFound, PlayerNotFound
 from app.util2 import generate_ID
 
 
@@ -67,17 +67,14 @@ class Player():
         if name is None:
             name = self.name
         if permission_str is None:
-            if self.permission is None:
-                return
-            else:
+            if self.permission is not None:
                 self.permission.delete_permission(connection)
         else:
             if self.permission is None:
-                self.permission = Permission(self.BOTID, connection)
+                self.permission = Permission(self.BOTID, permission_str)
                 self.permission.insert_permission(connection)
             else:
-                self.permission.update_permission(permission_str, connection)
-
+                self.permission.update_permission(connection, permission_str)
         if tier is not None:
             if self.whitelist_order is not None:
                 self.whitelist_order.update_order_tier(connection, tier)
@@ -148,21 +145,23 @@ class Player():
                 cursor.execute(sql, vars)
                 whitelistTable = cursor.fetchone()
             if whitelistTable:
-                orderID = whitelistTable['OrderID']
+                orderID = whitelistTable['orderID']
                 whitelistOrder = OrderIDWhitelistOrder(connection, orderID)
                 return whitelistOrder.BOTID
             else:
                 return "No whitelist" #TODO maybe raise an WhitelistNotFound error instead
 
     @staticmethod
-    def get_permission(BOTID: str, connection: Connection):
+    def get_permission(BOTID: str, connection: Connection) -> Permission:
         sql = "SELECT * FROM `permission` WHERE `BOTID` = %s"
         vars = (BOTID)
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
-        if bool(res): return res['permission']
-        else: return None
+        if bool(res): 
+            return Permission(BOTID, res['permission'])
+        else: 
+            return None
 
 
 ###########################
@@ -190,12 +189,16 @@ class DatabasePlayer(Player):
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
-        
+        if not bool(res):
+            raise PlayerNotFound()
         steam64ID = res["steam64ID"]
         name = res["name"]
         BOTID = res["BOTID"]
         permission = DatabasePlayer.get_permission(BOTID=BOTID, connection=connection)
-        whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        try:
+            whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        except WhitelistOrderNotFound:
+            whitelist_order = None
 
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
 
@@ -207,12 +210,17 @@ class SteamPlayer(Player):
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
-        
+        if not bool(res):
+            raise PlayerNotFound()
         discordID = res["discordID"]
         name = res["name"]
         BOTID = res["BOTID"]
         permission = DatabasePlayer.get_permission(BOTID=BOTID, connection=connection)
-        whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        
+        try:
+            whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        except WhitelistOrderNotFound:
+            whitelist_order = None
 
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)
 
@@ -224,10 +232,15 @@ class BOTIDPlayer(Player):
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
+        if not bool(res):
+            raise PlayerNotFound()
         steam64ID = res["steam64ID"]
         discordID = res["discordID"]
         name = res["name"]
         permission = DatabasePlayer.get_permission(BOTID=BOTID, connection=connection)
-        whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        try:
+            whitelist_order = DatabaseWhitelistOrder(BOTID, connection)
+        except WhitelistOrderNotFound:
+            whitelist_order = None
 
         super().__init__(BOTID, steam64ID, discordID, name, permission, whitelist_order)

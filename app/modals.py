@@ -37,14 +37,14 @@ class AddFriendModal(Modal):
             )
 
     async def on_submit(self, inter: Interaction):
-        print(f"we are registering a friend with id: {self.friend_steam64ID}") 
+        print(f"we are registering a friend with id: {self.friend_steam64ID}")
         with connect_database() as connection:
             cl.add_player_to_whitelist(connection, owner_member=inter.user, player_steam64ID=str(self.friend_steam64ID))
             connection.commit()
         await inter.response.send_message(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await inter.followup.send(embed=command_error_embed_gen(error))
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
 
 class UpdateSteamIDModal(Modal):
     def __init__(self):

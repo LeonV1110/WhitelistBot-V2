@@ -25,10 +25,12 @@ class ExplainEmbedView(View):
         await inter.response.defer(ephemeral=True)
         try:
             with connect_database() as connection:
-                embed = cl.get_player_info(connection, member = inter.user[1])
+                embed = cl.get_player_info(connection, member = inter.user)
+                connection.commit()
         except Exception as error:
-            await inter.followup.send(embed=command_error_embed_gen(error))
-        await inter.followup.send(embed= embed, ephemeral=True)
+            await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
+            return
+        await inter.followup.send(embed=embed, ephemeral=True)
 
     @button(style=ButtonStyle.secondary, label='Get My Whitelist Info', custom_id='embed:get_whitelist_info')
     async def get_whitelist_info(self, inter: Interaction, button: Button):
@@ -36,8 +38,10 @@ class ExplainEmbedView(View):
         try:
             with connect_database() as connection:
                 embed = cl.get_whitelist_info(connection, member=inter.user)
+                connection.commit()
         except Exception as error:
-            await inter.followup.send(embed=command_error_embed_gen(error))
+            await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
+            return
         await inter.followup.send(embed= embed, ephemeral=True)
 
     @button(style=ButtonStyle.secondary, label='Update My Data', custom_id='embed:update_data')
@@ -46,8 +50,10 @@ class ExplainEmbedView(View):
         try:
             with connect_database() as connection:
                 cl.update_player_from_member(connection, member= inter.user)
+                connection.commit()
         except Exception as error:
-            await inter.followup.send(embed=command_error_embed_gen(error))
+            await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
+            return
         await inter.followup.send(embed = Embed(title='Your data was successfully updated.'), ephemeral=True)
     
     @button(style = ButtonStyle.red, label='Delete My Data', custom_id='embed:remove_data')

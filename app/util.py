@@ -10,7 +10,7 @@ from app import config as cfg
 from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound
 from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player
 
-RERAISING = True # dev config option to make the program reraise errors for a proper stacktrace instead of replying to the user 
+RERAISING = False # dev config option to make the program reraise errors for a proper stacktrace instead of replying to the user
 #TODO should be possible to have both
 
 
@@ -83,7 +83,13 @@ def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, MissingRole):
         error_str = 'You do not have the required roles to use this command'
     elif isinstance(error, MyException):
+        print("---------------------------------------")
+        print(f"an {type(error)} error occured:")
+        print(error)
+        print("---------------------------------------")
         error_str = str(error)
+        if RERAISING:
+            raise Exception from error
     elif isinstance(error, OperationalError):
         error_str = "The bot is currently having issues, please try again later."
     else:
@@ -92,7 +98,8 @@ def command_error_embed_gen(error: Exception) -> Embed:
         print(error)
         print("---------------------------------------")
         error_str = "Some unknown error occured, please ping your sys admin"
-        raise Exception from error
+        if RERAISING:
+            raise Exception from error
     return Embed(title=error_str)
 
 def connect_database() -> pymysql.connections.Connection:

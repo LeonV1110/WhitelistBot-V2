@@ -36,10 +36,10 @@ class WhitelistOrder():
         self.tier = tier
 
         if self.active:
-            if len(self.whitelists) > cfg.WHITELIST_ALLOWANCE[tier]:
+            if len(self.whitelists) > int(cfg.WHITELIST_ALLOWANCE[tier]):
                 self.active = False
         else:
-            if len(self.whitelists) <= cfg.WHITELIST_ALLOWANCE[tier]:
+            if len(self.whitelists) <= int(cfg.WHITELIST_ALLOWANCE[tier]):
                 self.active = True
 
         sql = "UPDATE `whitelist_order` SET `active` = %s, `tier` = %s WHERE `ORDERID` = %s"
@@ -56,10 +56,10 @@ class WhitelistOrder():
         if active is not None:
             self.active = active
         if self.active:
-            if len(self.whitelists) > cfg.WHITELIST_ALLOWANCE[self.tier]:
+            if len(self.whitelists) > int(cfg.WHITELIST_ALLOWANCE[self.tier]):
                 self.active = False
         else:
-            if len(self.whitelists) <= cfg.WHITELIST_ALLOWANCE[self.tier]:
+            if len(self.whitelists) <= int(cfg.WHITELIST_ALLOWANCE[self.tier]):
                 self.active = True
         
         sql = "UPDATE `whitelist_order` SET `active` = %s WHERE `ORDERID` = %s"
@@ -82,7 +82,7 @@ class WhitelistOrder():
             if whitelist.BOTID == BOTID:
                 raise DuplicatePlayerPresent("This player is already present on your whitelist subscription.")
         
-        if len(self.whitelists) + 1 <= cfg.WHITELIST_ALLOWANCE[self.tier]:
+        if len(self.whitelists) + 1 <= int(cfg.WHITELIST_ALLOWANCE[self.tier]):
             Whitelist(BOTID, self.orderID).insert_whitelist(connection)
         else:
             raise InsufficientTier("Your whitelist subscription tier is insufficient to add any more whitelists")
@@ -117,8 +117,9 @@ class NewWhitelistOrder(WhitelistOrder):
         vars = (orderID)
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
-            res = cursor.fethone()
-        return res(bool)
+            res = cursor.fetchone()
+
+        return bool(res)
 
 class DatabaseWhitelistOrder(WhitelistOrder):
     def __init__(self, BOTID, connection: Connection):
@@ -132,17 +133,19 @@ class DatabaseWhitelistOrder(WhitelistOrder):
         orderID = res['orderID']
 
         tier = res['tier']
-        whitelists = DatabaseWhitelistOrder.get_all_whitelists(orderID=orderID, connection=connection)
+        whitelists = DatabaseWhitelistOrder.get_all_whitelists(connection=connection, orderID=orderID)
         active = res['active']
         super().__init__(BOTID, orderID, tier, whitelists, active)
 
     @staticmethod
-    def get_all_whitelists(orderID, connection: Connection) -> list:
+    def get_all_whitelists(connection: Connection, orderID) -> list:
         sql = "select * from `whitelist` where `orderID` = %s"
         vars = (orderID)
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchall()
+        if not bool(res):
+            raise WhitelistOrderNotFound()
         wl_list = []
         for wl_dict in res:
             whitelist = Whitelist(wl_dict['BOTID'], wl_dict['orderID'])
@@ -154,8 +157,10 @@ class OrderIDWhitelistOrder(WhitelistOrder):
         sql = "SELECT * FROM `whitelist_order` WHERE `orderID` = %s"
         vars = (orderID)
         with connection.cursor() as cursor:
-            cursor.executer(sql, vars)
+            cursor.execute(sql, vars)
             res = cursor.fetchone()
+        if not bool(res):
+            raise WhitelistOrderNotFound()
         BOTID = res['BOTID']
         tier = res['tier']
         whitelists = DatabaseWhitelistOrder.get_all_whitelists(connection, orderID)

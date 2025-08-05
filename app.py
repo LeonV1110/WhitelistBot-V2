@@ -3,6 +3,7 @@
 import discord
 
 from discord import Embed, Colour, Interaction
+from discord.app_commands.errors import MissingRole
 from discord.member import Member
 
 from app import config as cfg
@@ -60,7 +61,7 @@ async def on_member_join(member: Member):
 
 #@bot.tree.command(name="testing", guilds=guilds)
 async def testing(inter):
-    await inter.response.send_message("button", view=ExplainEmbedView())
+    await inter.response.send_message("button", view=ExplainEmbedView(),)
 
 #@bot.tree.command(name= "hello", description='Say Hello!',  guilds=guilds)
 async def sayHello(inter, member: Member):
@@ -101,7 +102,11 @@ async def admin_get_player_info(inter: Interaction, member: Member = None, disco
 
 @admin_get_player_info.error
 async def admin_get_player_info_error(inter: Interaction, error: Exception):
-    await inter.followup.send(embed=command_error_embed_gen(error))
+    if isinstance(error, MissingRole):
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
+    else:
+        await inter.followup.send(embed=command_error_embed_gen(error))
+
 
 @bot.tree.command(description="Get whitelist-info on player, prefrence: Member, discordID, steam64ID", guilds=guilds)
 @discord.app_commands.checks.has_role(cfg.ADMIN_ROLE)
@@ -125,7 +130,10 @@ async def admin_get_whitelist_info(inter: Interaction, member: Member = None, di
 
 @admin_get_whitelist_info.error
 async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
-    await inter.followup.send(embed=command_error_embed_gen(error))
+    if isinstance(error, MissingRole):
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
+    else:
+        await inter.followup.send(embed=command_error_embed_gen(error))
 
 ######################################
 ########   Delete Commands    ########
@@ -148,7 +156,11 @@ async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) 
 
 @admin_nuke_player.error
 async def admin_nuke_player_info_error(inter: Interaction, error: Exception):
-    await inter.followup.send(embed=command_error_embed_gen(error))
+    if isinstance(error, MissingRole):
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
+    else:
+        await inter.followup.send(embed=command_error_embed_gen(error))
+
 
 #########################################
 ########   Sys admin Commands    ########
@@ -208,7 +220,10 @@ async def explain_embed_setup(inter):
 
 @explain_embed_setup.error
 async def explain_embed_setup_error(inter: Interaction, error):
-    await inter.followup.send(embed=command_error_embed_gen(error))
+    if isinstance(error, MissingRole):
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
+    else:
+        await inter.followup.send(embed=command_error_embed_gen(error))
 
 if __name__ == "__main__":
     bot.run(cfg.TOKEN)

@@ -28,7 +28,7 @@ class Permission():
             cursor.execute(sql, vars)
         return
 
-    def update_permission(self, permission: str, connection: Connection):
+    def update_permission(self, connection: Connection, permission: str):
         self.permission = permission
         sql = "UPDATE `permission` SET `permission` = %s WHERE `BOTID` = %s"
         vars = (permission, self.BOTID)
