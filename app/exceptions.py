@@ -42,6 +42,11 @@ class InsufficientTier(MyException):
         self.message = message
         super().__init__(self.message)
 
+class WhitelistOrderNotFound(MyException):
+    def __init__(self, message = "You do not have an (active) whitelist subscription."):
+        self.message = message
+        super().__init__(self.message)
+
 class WhitelistNotFound(MyException):
     def __init__(self, message = "This player does not have a whitelist on your subscription."):
         self.message = message

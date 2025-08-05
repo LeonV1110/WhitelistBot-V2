@@ -8,7 +8,7 @@ from discord.member import Member
 from app import config as cfg
 from app.views.explain_embed_view import ExplainEmbedView
 import app.command_logic as cl
-from app.util import command_error_handler, command_error_embed_gen, get_player, connect_database, create_bot
+from app.util import command_error_embed_gen, get_player, connect_database, create_bot
 
 
 bot = create_bot()
@@ -208,7 +208,7 @@ async def explain_embed_setup(inter):
 
 @explain_embed_setup.error
 async def explain_embed_setup_error(inter: Interaction, error):
-    await command_error_handler(inter, error)
+    await inter.followup.send(embed=command_error_embed_gen(error))
 
 if __name__ == "__main__":
     bot.run(cfg.TOKEN)

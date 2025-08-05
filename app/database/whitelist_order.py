@@ -2,7 +2,7 @@ import random
 from pymysql.connections import Connection
 from app.database.whitelist import Whitelist
 from app import config as cfg
-from app.exceptions import InsufficientTier, DuplicatePlayerPresent, SelfDestruct, WhitelistNotFound
+from app.exceptions import InsufficientTier, DuplicatePlayerPresent, SelfDestruct, WhitelistNotFound, WhitelistOrderNotFound
 
 class WhitelistOrder():
     BOTID: str
@@ -127,7 +127,10 @@ class DatabaseWhitelistOrder(WhitelistOrder):
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
+        if not bool(res):
+            raise WhitelistOrderNotFound()
         orderID = res['orderID']
+
         tier = res['tier']
         whitelists = DatabaseWhitelistOrder.get_all_whitelists(orderID=orderID, connection=connection)
         active = res['active']

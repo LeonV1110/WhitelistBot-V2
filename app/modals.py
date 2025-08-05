@@ -3,7 +3,7 @@ from discord import Embed, TextStyle, Interaction
 from discord.ext.commands import Context
 from discord.ui import Modal, TextInput
 from app import command_logic as cl
-from app.util import command_error_handler, connect_database
+from app.util import connect_database, command_error_embed_gen
 
 class RegisterModal(Modal):
     def __init__(self):
@@ -23,7 +23,7 @@ class RegisterModal(Modal):
         await inter.response.send_message(embed=Embed(title='Registration was successful'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await command_error_handler(inter, error)
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
 
 class AddFriendModal(Modal):
     def __init__(self):
@@ -44,7 +44,7 @@ class AddFriendModal(Modal):
         await inter.response.send_message(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await command_error_handler(inter, error)
+        await inter.followup.send(embed=command_error_embed_gen(error))
 
 class UpdateSteamIDModal(Modal):
     def __init__(self):
@@ -65,7 +65,7 @@ class UpdateSteamIDModal(Modal):
         await inter.response.send_message(embed = Embed(title='Your Steam64ID was successfully updated.'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await command_error_handler(inter, error)
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
 
 class RemoveDataModal(Modal):
     def __init__(self):
@@ -93,7 +93,7 @@ class RemoveDataModal(Modal):
         await inter.response.send_message(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await command_error_handler(inter, error)
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
 
 class RemoveFriendModal(Modal):
     def __init__(self):
@@ -115,4 +115,4 @@ class RemoveFriendModal(Modal):
         await inter.response.send_message(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
-        await command_error_handler(inter, error)
+        await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)

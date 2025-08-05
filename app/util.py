@@ -1,9 +1,8 @@
 """A collection of utility functions"""
 import pymysql
-import random
 
 from pymysql import Connection, OperationalError
-from discord import Interaction, Embed, Intents
+from discord import Embed, Intents
 from discord.app_commands.errors import MissingRole
 from discord.ext.commands import Bot
 from discord.ui import View
@@ -11,13 +10,17 @@ from app import config as cfg
 from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound
 from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player
 
+RERAISING = True # dev config option to make the program reraise errors for a proper stacktrace instead of replying to the user 
+#TODO should be possible to have both
+
+
 def check_steam64ID(steam64ID: str):
     #check if int
     str(steam64ID)
     try:
         int(steam64ID)
-    except:
-        raise InvalidSteam64ID("A steam64ID contains just numbers.")
+    except Exception as e:
+        raise InvalidSteam64ID("A steam64ID contains just numbers.") from e
     #check if not default steam64ID
     if (steam64ID == str(76561197960287930)):
         raise InvalidSteam64ID("This is Gabe Newell's steam64ID, please make sure to enter the correct one.")
@@ -35,8 +38,8 @@ def check_discordID(discordID: str):
     str(discordID)
     try:
         int(discordID)
-    except:
-        raise InvalidDiscordID('A discordID contains just numbers.')
+    except Exception as e:
+        raise InvalidDiscordID('A discordID contains just numbers.') from e
     if len(discordID) < 17: 
         raise InvalidDiscordID("A discordID is at least 17 characters long, this one is too short.")
     elif len(discordID) > 19:
@@ -76,21 +79,6 @@ def convert_role_to_tier(roles):
         if role.id in whitelist_roles: return whitelist_roles[role.id]
     return None
 
-async def command_error_handler(inter: Interaction, error):
-    if isinstance(error, MissingRole):
-        await inter.followup.send_message(embed=Embed(title='You do not have the required roles to use this command'), ephemeral=True)
-    if isinstance(error, MyException):
-        await inter.followup.send_message(error, ephemeral=True)
-    elif isinstance(error, OperationalError):
-        await inter.followup.send_message("The bot is currently having issues, please try again later.", ephemeral=True)
-    else:
-        print("---------------------------------------")
-        print(f"an {type(error)} error occured:")
-        print(error)
-        print("---------------------------------------")
-        await inter.followup.send_message("Some unknown error occured, please ping your sys admin", ephemeral=True)
-        raise Exception from error
-
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, MissingRole):
         error_str = 'You do not have the required roles to use this command'
@@ -104,6 +92,7 @@ def command_error_embed_gen(error: Exception) -> Embed:
         print(error)
         print("---------------------------------------")
         error_str = "Some unknown error occured, please ping your sys admin"
+        raise Exception from error
     return Embed(title=error_str)
 
 def connect_database() -> pymysql.connections.Connection:
