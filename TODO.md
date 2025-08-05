@@ -6,5 +6,6 @@ whitelistOrder -> Done
 whitelist -> Done
 Permission -> Done
 exceptions -> Done
-Command Logic
-app.py (add all cmds)
+Command Logic -> Done
+app.py (add all cmds) -> Done
+

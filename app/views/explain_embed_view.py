@@ -35,7 +35,7 @@ class ExplainEmbedView(View):
         await inter.response.defer(ephemeral=True)
         try:
             with connect_database() as connection:
-                embed = cl.get_whitelist_info(connection, member=inter.user[1])
+                embed = cl.get_whitelist_info(connection, member=inter.user)
         except Exception as error:
             await command_error_handler(inter, error)
         await inter.followup.send(embed= embed, ephemeral=True)
@@ -45,7 +45,7 @@ class ExplainEmbedView(View):
         await inter.response.defer(ephemeral=True)
         try:
             with connect_database() as connection:
-                cl.update_player_from_member(connection, member= inter.user[1])
+                cl.update_player_from_member(connection, member= inter.user)
         except Exception as error:
             await command_error_handler(inter, error)
         await inter.followup.send(embed = Embed(title='Your data was successfully updated.'), ephemeral=True)

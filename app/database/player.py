@@ -4,7 +4,7 @@ from pymysql.connections import Connection
 from app.database.permission import Permission
 from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
 from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
-
+from app.util2 import generate_ID
 
 
 class Player():
@@ -31,7 +31,6 @@ class Player():
         return self.__dict__ == __o.__dict__
 
     def insert_player(self, connection: Connection):
-        # check for duplicate player
         sql = "INSERT INTO `player` (`BOTID`, `steam64ID`, `discordID`, `name`, `patreonID`) VALUES (%s, %s, %s, %s, %s)"
         vars = (self.BOTID, self.steam64ID, self.discordID, self.name, self.patreonID)
         with connection.cursor() as cursor:
@@ -171,7 +170,8 @@ class Player():
 ###########################
 
 class NewPlayer(Player):
-    def __init__(self, connection: Connection, BOTID: str, steam64ID: str, discordID: str, name: str, permission_string: str = None, whitelist_tier: str = None, ):
+    def __init__(self, connection: Connection, steam64ID: str, discordID: str, name: str, permission_string: str = None, whitelist_tier: str = None, ):
+        BOTID = generate_ID(connection, "BOTID")
         if permission_string is not None:
             permission = Permission(BOTID, permission_string)
         else:

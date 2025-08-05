@@ -15,8 +15,7 @@ bot = create_bot()
 
 guilds = []
 for guild_id in cfg.GUILD_IDS:
-    guild = discord.Object(id = guild_id)
-    guilds.append(guild)
+    guilds.append(discord.Object(id = guild_id))
 
 #############################
 ########   Events    ########
@@ -27,27 +26,33 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
     bot.add_view(ExplainEmbedView())
     try:
-        synced = await bot.tree.sync(guilds=guilds)
-        print(f'Synced {len(synced)} cmds')
+        for guild in guilds:
+            synced = await bot.tree.sync(guild=guild)
+            print(f'Synced {len(synced)} cmds, in guildID: {guild.id}')
     except Exception as e:
         print(e)
+    return
 
 @bot.event
 async def on_member_update(before: Member, after: Member) -> None:
     with connect_database() as connection:
         cl.update_player_from_member(connection, member=after)
+        connection.commit()
     return
 
 @bot.event
 async def on_raw_member_remove(payload) -> None:
     with connect_database() as connection:
         cl.deactivate_whitelist_order(connection, member = payload.user)
+        connection.commit()
     return
 
 @bot.event
 async def on_member_join(member: Member):
     with connect_database() as connection:
         cl.update_player_from_member(connection, member)
+        connection.commit()
+    return
 
 #######################################
 ########   TESTING Commands    ########
@@ -81,12 +86,15 @@ async def admin_get_player_info(inter: Interaction, member: Member = None, disco
     if member is not None:
         with connect_database() as connection:
             embed = cl.get_player_info(connection, member=member)
+            connection.commit()
     elif discordid is not None:
         with connect_database() as connection:
             embed = cl.get_player_info(connection, discordID=discordid)
+            connection.commit()
     elif steam64id is not None:
         with connect_database() as connection:
             embed = cl.get_player_info(connection, steam64ID=steam64id)
+            connection.commit()
     else:
         embed = Embed(title='Please use one of the options')
     await inter.followup.send(embed=embed)
@@ -102,12 +110,15 @@ async def admin_get_whitelist_info(inter: Interaction, member: Member = None, di
     if member is not None:
         with connect_database() as connection:
             embed = cl.get_whitelist_info(connection, member=member)
+            connection.commit()
     elif discordid is not None:
         with connect_database() as connection:
             embed = cl.get_whitelist_info(connection, discordID=discordid)
+            connection.commit()
     elif steam64id is not None:
         with connect_database() as connection:
             embed = cl.get_whitelist_info(connection, steam64ID=steam64id)
+            connection.commit()
     else:
         embed = Embed(title='Please use one of the options')
     await inter.followup.send(embed=embed)
@@ -129,6 +140,7 @@ async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) 
         steam_player = get_player(connection, steam64ID=steam64id)
         if discord_player == steam_player:
             cl.remove_player(connection, discordID=discordid)
+            connection.commit()
             embed = Embed(title = f"{discord_player.name} has been successfully deleted from the database.")
         else:
             embed = Embed(title = f"The discordID is from {discord_player.name} while the steamId is from {steam_player.name}. Double check and try again. If the issue persists you can annoy Leon I guess...")

@@ -15,11 +15,12 @@ class RegisterModal(Modal):
             style=TextStyle.short,
             max_length=19)
 
-    async def on_submit(self, ctx: Context):
+    async def on_submit(self, inter: Interaction):
         print(f"we are registering a player with id: {self.steam64ID}")
         with connect_database() as connection:
-            cl.register_player(connection, member=ctx.author, steam64ID=str(self.steam64ID))
-        await ctx.send(embed=Embed(title='Registration was successful'), ephemeral=True)
+            cl.register_player(connection, member=inter.user, steam64ID=str(self.steam64ID))
+            connection.commit()
+        await inter.response.send_message(embed=Embed(title='Registration was successful'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)
@@ -35,11 +36,12 @@ class AddFriendModal(Modal):
             max_length=19
             )
 
-    async def on_submit(self, ctx: Context):
+    async def on_submit(self, inter: Interaction):
         print(f"we are registering a friend with id: {self.friend_steam64ID}") 
         with connect_database() as connection:
-            cl.add_player_to_whitelist(connection, owner_member=ctx.author, player_steam64ID=str(self.friend_steam64ID))
-        await ctx.send(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
+            cl.add_player_to_whitelist(connection, owner_member=inter.user, player_steam64ID=str(self.friend_steam64ID))
+            connection.commit()
+        await inter.response.send_message(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)
@@ -55,11 +57,12 @@ class UpdateSteamIDModal(Modal):
             max_length=19
             )
 
-    async def on_submit(self,  ctx: Context):
+    async def on_submit(self,  inter: Interaction):
         print(f'We are updating the steam64ID to {self.new_steam64ID}')
         with connect_database() as connection:
-            cl.change_steam64ID(connection, ctx.author, steam64ID=self.new_steam64ID)
-        await ctx.send(embed = Embed(title='Your Steam64ID was successfully updated.'), ephemeral=True)
+            cl.change_steam64ID(connection, inter.user, steam64ID=self.new_steam64ID)
+            connection.commit()
+        await inter.response.send_message(embed = Embed(title='Your Steam64ID was successfully updated.'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)
@@ -75,18 +78,19 @@ class RemoveDataModal(Modal):
         max_length=6
     )
 
-    async def on_submit(self,  ctx: Context):
+    async def on_submit(self,  inter: Interaction):
         embed = Embed(title='Your information has been successfully deleted')
         message = str(self.delete)
 
         if message == "DELETE":
-            print(f'We are deleting the account of {ctx.author}')
+            print(f'We are deleting the account of {inter.user}')
             with connect_database() as connection:
-                cl.remove_player(connection=connection, member = ctx.author)
+                cl.remove_player(connection=connection, member = inter.user)
+                connection.commit()
         else: 
             embed = Embed(title='Nothing happened, and your data is still in the database.')
 
-        await ctx.send(embed=embed, ephemeral=True)
+        await inter.response.send_message(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)
@@ -102,12 +106,13 @@ class RemoveFriendModal(Modal):
             max_length=19
             )
 
-    async def on_submit(self,  ctx: Context):
+    async def on_submit(self,  inter: Interaction):
         embed = Embed(title='Your friend was successfully removed')
         print(f'{self.friend_steamID}')
         with connect_database() as connection:
-            cl.remove_player_from_whitelist(connection, owner_member=ctx.author, player_steam64ID=self.friend_steamID)
-        await ctx.send(embed=embed, ephemeral=True)
+            cl.remove_player_from_whitelist(connection, owner_member=inter.user, player_steam64ID=self.friend_steamID)
+            connection.commit()
+        await inter.response.send_message(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
         await command_error_handler(inter, error)

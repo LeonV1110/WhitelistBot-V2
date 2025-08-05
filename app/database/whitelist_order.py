@@ -103,14 +103,14 @@ class NewWhitelistOrder(WhitelistOrder):
     def __init__(self, BOTID: str, tier: str, connection: Connection):
         orderID = NewWhitelistOrder.__generate_orderID(connection)
         super().__init__(BOTID, orderID, tier, [])
-    
+
     @staticmethod
     def __generate_orderID(connection: Connection) -> str:
         orderID: int = 1
         while orderID == 1 or NewWhitelistOrder.__check_orderID_pressence(orderID, connection):
             orderID = random.randint(1111111111111111, 9999999999999999) #16 long ID
         return str(orderID)
-    
+
     @staticmethod
     def __check_orderID_pressence(orderID, connection: Connection) -> bool:
         sql = "SELECT * FROM `whitelist_order` WHERE `orderID` = %s"
@@ -119,7 +119,7 @@ class NewWhitelistOrder(WhitelistOrder):
             cursor.execute(sql, vars)
             res = cursor.fethone()
         return res(bool)
-    
+
 class DatabaseWhitelistOrder(WhitelistOrder):
     def __init__(self, BOTID, connection: Connection):
         sql = "SELECT * FROM `whitelist_order` WHERE `BOTID` = %s"

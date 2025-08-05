@@ -5,8 +5,8 @@ from discord import Member, Embed
 from pymysql import Connection, OperationalError
 
 from app.database.player import Player, NewPlayer
-from app import util, config as cfg
-from app.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException
+from app import util, config as cfg, util2
+from app.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
 
 
 def update_player_from_member(connection: Connection, member: Member):
@@ -25,10 +25,15 @@ def deactivate_whitelist_order(connection: Connection, member: Member):
 def register_player(connection: Connection, member:Member, steam64ID: str):
     util.check_steam64ID(steam64ID)
     discordID = str(member.id)
-    name = member.name
-    tier = util.convert_role_to_tier(member.roles)
-    permission = util.convert_role_to_perm(member.roles)
-    NewPlayer(steam64ID, discordID, name, permission, tier).insert_player(connection)
+    if util2.check_ID_pressence(connection, steam64ID, 'STEAM'):
+        raise DuplicatePlayerPresentSteam()
+    elif util2.check_ID_pressence(connection, discordID, 'DISCORD'):
+        raise DuplicatePlayerPresentDiscord()
+    else:
+        name = member.name
+        tier = util.convert_role_to_tier(member.roles)
+        permission = util.convert_role_to_perm(member.roles)
+        NewPlayer(connection, steam64ID, discordID, name, permission, tier).insert_player(connection)
 
 def remove_player(connection: Connection, member: Member = None, discordID: str = None, 
                   steam64ID: str = None, BOTID: str = None):

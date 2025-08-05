@@ -1,5 +1,6 @@
 """A collection of utility functions"""
 import pymysql
+import random
 
 from pymysql import Connection, OperationalError
 from discord import Interaction, Embed, Intents
@@ -77,17 +78,18 @@ def convert_role_to_tier(roles):
 
 async def command_error_handler(inter: Interaction, error):
     if isinstance(error, MissingRole):
-        await inter.response.send_message(embed=Embed(title='You do not have the required roles to use this command'), ephemeral=True)
+        await inter.followup.send_message(embed=Embed(title='You do not have the required roles to use this command'), ephemeral=True)
     if isinstance(error, MyException):
-        await inter.response.send_message(error, ephemeral=True)
+        await inter.followup.send_message(error, ephemeral=True)
     elif isinstance(error, OperationalError):
-        await inter.response.send_message("The bot is currently having issues, please try again later.", ephemeral=True)
+        await inter.followup.send_message("The bot is currently having issues, please try again later.", ephemeral=True)
     else:
         print("---------------------------------------")
         print(f"an {type(error)} error occured:")
         print(error)
         print("---------------------------------------")
-        await inter.response.send_message("Some unknown error occured, please ping your sys admin", ephemeral=True)
+        await inter.followup.send_message("Some unknown error occured, please ping your sys admin", ephemeral=True)
+        raise Exception from error
 
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, MissingRole):
