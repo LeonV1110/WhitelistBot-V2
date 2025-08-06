@@ -8,6 +8,7 @@ from discord.member import Member
 
 from app import config as cfg
 from app.views.explain_embed_view import ExplainEmbedView
+from app.exceptions import MyException
 import app.command_logic as cl
 from app.util import command_error_embed_gen, get_player, connect_database, create_bot
 
@@ -36,9 +37,12 @@ async def on_ready():
 
 @bot.event
 async def on_member_update(before: Member, after: Member) -> None:
-    with connect_database() as connection:
-        cl.update_player_from_member(connection, member=after)
-        connection.commit()
+    try:
+        with connect_database() as connection:
+            cl.update_player_from_member(connection, member=after)
+            connection.commit()
+    except MyException:
+        pass
     return
 
 @bot.event
@@ -174,47 +178,47 @@ async def explain_embed_setup(inter):
                   colour=Colour.orange())
     embed.add_field(name='Patreon', value=f'Get your whitelist at {cfg.WHITELIST_LINK}')
     embed.add_field(name='Register', value='''
-        Use this button to register yourself with the bot, it will ask you for your steam64 ID. Getting registered is required to activate your whitelist or to get whitelisted by a friend. \n
-        - Note: To find your Steam64 ID go to the settings page on your steam account and click on the "View Account Details" option. A new page will open in steam, at the top it will state "Steam64 ID: 7656119xxxxxxxxxx" (with the x's being unique to your account). This is your steam64ID that you need to use when registering. \n
-        - Important: Once you are registered and have an active whitelist it will only take effect once a new round has started on the server (maximum 2 hours).\n
+Use this button to register yourself with the bot, it will ask you for your steam64 ID. Getting registered is required to activate your whitelist or to get whitelisted by a friend.
+- Note: To find your Steam64 ID go to the settings page on your steam account and click on the "View Account Details" option. A new page will open in steam, at the top it will state "Steam64 ID: 7656119xxxxxxxxxx" (with the x's being unique to your account). This is your steam64ID that you need to use when registering.
+- Important: Once you are registered and have an active whitelist it will only take effect once a new round has started on the server (maximum 2 hours).
         ''', inline=False)
     embed.add_field(name='Add a Friend', value='''
-        If you have a higher tier patreon subscription you have the abilitty to add friends, make sure they register and then get their steam64 ID.\n
-        - Note: You can only add one friend at a time.\n
-        - Important: Once you added your friend their whitelist will only take effect once a new round has started (maximum 2 hours).\n
+If you have a higher tier patreon subscription you have the abilitty to add friends, make sure they register and then get their steam64 ID.
+- Note: You can only add one friend at a time.
+- Important: Once you added your friend their whitelist will only take effect once a new round has started (maximum 2 hours).
         ''', inline=False)
     embed.add_field(name='Change My Steam64ID', value='''
-        If you used the wrong steam64 ID when you registered you can change it by entering the correct one.
+If you used the wrong steam64 ID when you registered you can change it by entering the correct one.
         ''', inline=False)
     embed.add_field(name='Get My Info', value=f'''
-        To check if everything should be working you can use this button, it will show you your:\n
-        - Currently listed steam64 ID\n
-        - Discord ID\n
-        - "{cfg.BOTNAME}" ID (this is a unique ID for you within the database, you can ignore this)\n
-        - Whitelist status (it will show whether your whitelist is "Active" or "Inactive")\n
-        - Who you are whitelisted by (only visible if your whitelist status is "Active")\n
-        - Whitelist subscription tier (only visible if you have any of those roles)\n
+To check if everything should be working you can use this button, it will show you your:
+- Currently listed steam64 ID
+- Discord ID
+- "{cfg.BOTNAME}" ID (this is a unique ID for you within the database, you can ignore this)
+- Whitelist status (it will show whether your whitelist is "Active" or "Inactive")
+- Who you are whitelisted by (only visible if your whitelist status is "Active")
+- Whitelist subscription tier (only visible if you have any of those roles)
         ''', inline=False)
     embed.add_field(name='Get My Whitelist Info', value='''
-        To see who you have added to your whitelist you can use this button, it will show you your:\n
-        - Whitelist subscription tier\n
-        - Whitelist status (it will show whether your whitelist is "Active" or "Inactive")\n
-        - Whitelists (a list of everyone whitelisted under your subscription including yourself)\n
-        - Note: Only works if you have a whitelist role in this discord.\n
+        To see who you have added to your whitelist you can use this button, it will show you your:
+- Whitelist subscription tier
+- Whitelist status (it will show whether your whitelist is "Active" or "Inactive")
+- Whitelists (a list of everyone whitelisted under your subscription including yourself)
+- Note: Only works if you have a whitelist role in this discord.
         ''', inline=False)
     embed.add_field(name='Update My Data', value='''
-        If something related to your whitelist is supposed to be working but isnt you can click this button first to force the bot to update. If that has no effect you can #create-ticekt with the admin team and we can take a better look.\n
-        - Important: Whitelist it will only take effect once a new round has started on the server (maximum 2 hours).\n
+If something related to your whitelist is supposed to be working but isnt you can click this button first to force the bot to update. If that has no effect you can #create-ticket with the admin team and we can take a better look.
+- Important: Whitelist it will only take effect once a new round has started on the server (maximum 2 hours).
         ''', inline=False)
     embed.add_field(name='Remove a Friend', value='''
-        If you want to remove a friend from your whitelist you can do that here. To remove them enter their steam64 ID in the provided form.\n
-        - Note: Dont worry, using this button wont remove them as your friend in real life. It just means that they are no longer whitelisted under your subscription.
+If you want to remove a friend from your whitelist you can do that here. To remove them enter their steam64 ID in the provided form.
+- Note: Dont worry, using this button wont remove them as your friend in real life. It just means that they are no longer whitelisted under your subscription.
         ''', inline=False)
     embed.add_field(name='Delete My Data', value='''
-        If you want to remove all your info from the database for whatever reason you can do this with this button, it will ask you to confirm by having you type in "DELETE" so you cant do it on accident.\n
-        - Note: This means that you will not be whitelisted anymore (even if you are whitelisted through a friend).
+If you want to remove all your info from the database for whatever reason you can do this with this button, it will ask you to confirm by having you type in "DELETE" so you cant do it on accident.
+- Note: This means that you will not be whitelisted anymore (even if you are whitelisted through a friend).
         ''', inline=False)
-    
+
     await inter.followup.send(embed=embed, view=ExplainEmbedView())
     return
 

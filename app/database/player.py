@@ -43,9 +43,9 @@ class Player():
 
     def delete_player(self, connection: Connection):
         if self.whitelist_order is not None:
-            self.whitelist_order.delete_order()
+            self.whitelist_order.delete_order(connection)
         if self.permission is not None:
-            self.permission.delete_permission()
+            self.permission.delete_permission(connection)
         #Delete any whitelists
         sql = "DELETE FROM `whitelist` WHERE `BOTID` = %s "
         vars = (self.BOTID)
