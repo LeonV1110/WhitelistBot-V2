@@ -34,4 +34,3 @@ def check_ID_pressence(connection: Connection, ID: int, type: str) -> bool:
     vars = (str(ID))
     with connection.cursor() as cursor:
         return bool(cursor.execute(sql, vars))
-    

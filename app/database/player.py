@@ -149,6 +149,7 @@ class Player():
                 whitelistOrder = OrderIDWhitelistOrder(connection, orderID)
                 return whitelistOrder.BOTID
             else:
+                raise WhitelistOrderNotFound()
                 return "No whitelist" #TODO maybe raise an WhitelistNotFound error instead
 
     @staticmethod
