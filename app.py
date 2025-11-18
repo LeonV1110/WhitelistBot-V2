@@ -25,18 +25,20 @@ for guild_id in cfg.GUILD_IDS:
 
 @bot.event
 async def on_ready():
+    """Function that is ran once when the bot first launches"""
     print(f"Logged in as {bot.user}")
     bot.add_view(ExplainEmbedView())
     try:
         for guild in guilds:
             synced = await bot.tree.sync(guild=guild)
             print(f'Synced {len(synced)} cmds, in guildID: {guild.id}')
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         print(e)
     return
 
 @bot.event
-async def on_member_update(before: Member, after: Member) -> None:
+async def on_member_update(before: Member, after: Member) -> None: # pylint: disable=unused-argument
+    """Function that is ran whenever a members role, nickname, etc. is updated"""
     try:
         with connect_database() as connection:
             cl.update_player_from_member(connection, member=after)
@@ -143,7 +145,9 @@ async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
 ########   Delete Commands    ########
 ######################################
 
-@bot.tree.command(description="Removes a player from the database, including their whitelist order and any whitelists on that order", guilds = guilds)
+@bot.tree.command(
+        description="Removes a player from the database, including their whitelist order and any whitelists on that order",
+        guilds = guilds)
 @discord.app_commands.checks.has_role(cfg.DELETE_ROLE)
 async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) -> None:
     await inter.response.defer()
@@ -155,7 +159,8 @@ async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) 
             connection.commit()
             embed = Embed(title = f"{discord_player.name} has been successfully deleted from the database.")
         else:
-            embed = Embed(title = f"The discordID is from {discord_player.name} while the steamId is from {steam_player.name}. Double check and try again. If the issue persists you can annoy Leon I guess...")
+            embed = Embed(
+                title = f"The discordID is from {discord_player.name} while the steamId is from {steam_player.name}. Double check and try again. If the issue persists you can annoy Leon I guess...")
     await inter.followup.send(embed=embed)
 
 @admin_nuke_player.error
