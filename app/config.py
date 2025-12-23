@@ -1,8 +1,12 @@
 """Import configs into global variables"""
 import configparser
+from pathlib import Path
 
 config = configparser.ConfigParser()
-config.read('config.ini')
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+config.read(BASE_DIR / "config.ini")
+
 
 DATABASEUSER = config['DATABASE']['DATABASE_USERNAME']
 DATABASEPSW = config['DATABASE']['DATABASE_PASSWORD']
