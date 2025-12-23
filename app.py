@@ -3,7 +3,7 @@
 import discord
 
 from discord import Embed, Colour, Interaction
-from discord.app_commands.errors import MissingRole
+from discord.app_commands.errors import MissingRole, MissingAnyRole
 from discord.member import Member
 
 from app import config as cfg
@@ -87,7 +87,7 @@ async def sayHello(inter, member: Member):
 #####################################
 
 @bot.tree.command(description="Get player-info on player, prefrence: Member, discordID, steam64ID", guilds=guilds)
-@discord.app_commands.checks.has_role(cfg.ADMIN_ROLE)
+@discord.app_commands.checks.has_any_role(*cfg.ADMIN_ROLES)
 async def admin_get_player_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
     await inter.response.defer()
     if member is not None:
@@ -108,14 +108,14 @@ async def admin_get_player_info(inter: Interaction, member: Member = None, disco
 
 @admin_get_player_info.error
 async def admin_get_player_info_error(inter: Interaction, error: Exception):
-    if isinstance(error, MissingRole):
+    if isinstance(error, MissingAnyRole):
         await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
     else:
         await inter.followup.send(embed=command_error_embed_gen(error))
 
 
 @bot.tree.command(description="Get whitelist-info on player, prefrence: Member, discordID, steam64ID", guilds=guilds)
-@discord.app_commands.checks.has_role(cfg.ADMIN_ROLE)
+@discord.app_commands.checks.has_any_role(*cfg.ADMIN_ROLES)
 async def admin_get_whitelist_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
     await inter.response.defer()
     if member is not None:
@@ -136,7 +136,7 @@ async def admin_get_whitelist_info(inter: Interaction, member: Member = None, di
 
 @admin_get_whitelist_info.error
 async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
-    if isinstance(error, MissingRole):
+    if isinstance(error, MissingAnyRole):
         await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
     else:
         await inter.followup.send(embed=command_error_embed_gen(error))
@@ -148,7 +148,7 @@ async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
 @bot.tree.command(
         description="Removes a player from the database, including their whitelist order and any whitelists on that order",
         guilds = guilds)
-@discord.app_commands.checks.has_role(cfg.DELETE_ROLE)
+@discord.app_commands.checks.has_any_role(*cfg.DELETE_ROLES)
 async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) -> None:
     await inter.response.defer()
     with connect_database() as connection:
@@ -165,7 +165,7 @@ async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) 
 
 @admin_nuke_player.error
 async def admin_nuke_player_info_error(inter: Interaction, error: Exception):
-    if isinstance(error, MissingRole):
+    if isinstance(error, MissingAnyRole):
         await inter.response.send_message(embed=command_error_embed_gen(error), ephemeral=True)
     else:
         await inter.followup.send(embed=command_error_embed_gen(error))

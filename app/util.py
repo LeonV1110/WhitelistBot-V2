@@ -3,7 +3,7 @@ import pymysql
 
 from pymysql import Connection, OperationalError
 from discord import Embed, Intents
-from discord.app_commands.errors import MissingRole, CommandInvokeError
+from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError
 from discord.ext.commands import Bot
 from discord.ui import View
 from app import config as cfg
@@ -82,7 +82,7 @@ def convert_role_to_tier(roles):
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, CommandInvokeError):
         error = error.__cause__
-    if isinstance(error, MissingRole):
+    if isinstance(error, MissingRole) or isinstance(error, MissingAnyRole):
         error_str = 'You do not have the required roles to use this command'
     elif isinstance(error, MyException):
         print("---------------------------------------")
