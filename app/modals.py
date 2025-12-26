@@ -110,7 +110,7 @@ class RemoveFriendModal(Modal):
         embed = Embed(title='Your friend was successfully removed')
         print(f'We are removing "{self.friend_steamID}" as a friend from {inter.user.name}')
         with connect_database() as connection:
-            cl.remove_player_from_whitelist(connection, owner_member=inter.user, player_steam64ID=self.friend_steamID)
+            cl.remove_player_from_whitelist(connection, owner_member=inter.user, player_steam64ID=str(self.friend_steamID))
             connection.commit()
         await inter.response.send_message(embed=embed, ephemeral=True)
 
