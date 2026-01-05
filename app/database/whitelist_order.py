@@ -82,7 +82,7 @@ class WhitelistOrder():
             if whitelist.BOTID == BOTID:
                 raise DuplicatePlayerPresent("This player is already present on your whitelist subscription.")
         
-        if len(self.whitelists) + 1 <= int(cfg.WHITELIST_ALLOWANCE[self.tier]):
+        if len(self.whitelists) + 1 <= int(cfg.WHITELIST_ALLOWANCE[self.tier]): #TODO, this means that the DB name, and the name in the config need to be the same (case insenitive)
             Whitelist(BOTID, self.orderID).insert_whitelist(connection)
         else:
             raise InsufficientTier("Your whitelist subscription tier is insufficient to add any more whitelists")
