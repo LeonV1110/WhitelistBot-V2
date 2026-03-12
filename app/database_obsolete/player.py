@@ -1,8 +1,8 @@
 """Player class and subclasses"""
 
 from pymysql.connections import Connection
-from app.database.permission import Permission
-from app.database.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
+from app.database_obsolete.permission import Permission
+from app.database_obsolete.whitelist_order import WhitelistOrder, NewWhitelistOrder, DatabaseWhitelistOrder, OrderIDWhitelistOrder
 from app.exceptions import DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord, WhitelistOrderNotFound, PlayerNotFound
 from app.util2 import generate_ID
 

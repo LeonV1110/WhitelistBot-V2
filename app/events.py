@@ -1,18 +1,17 @@
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
 from sqlalchemy.engine import Engine
-from database import Whitelist, Whitelist_order
+from app.database import Whitelist, Whitelist_order
 
-
-# 
-
-from sqlalchemy import event
-
+# automatically enable foreign keys when sqlite is used
 @event.listens_for(Engine, "connect")
 def enable_sqlite_fk(dbapi_conn, conn_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+    try:
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+    except Exception as e:
+        pass #TODO find correct exception to use
 
 
 # Auto update whitelist count from within this app

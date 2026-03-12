@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
-import events
+import app.events
 
 
 Base = declarative_base()
@@ -10,9 +10,9 @@ class Player(Base):
 
     player_id           = Column(String(36), primary_key=True)
     name                = Column(String, nullable=False)
-    discord_id          = Column(String(19), nullable=False)
-    steam64_id          = Column(String(17), nullable=True)
-    eos_id              = Column(String(32), nullable=True)
+    discord_id          = Column(String(19), nullable=False, unique=True)
+    steam64_id          = Column(String(17), nullable=True, unique=True)
+    eos_id              = Column(String(32), nullable=True, unique=True)
     #TODO double check if eosID is actually max 32 characters
 
     whitelist_order     = relationship('Whitelist_order', back_populates='player')
@@ -91,17 +91,6 @@ Session = sessionmaker(bind=engine)
 session = Session()
 Base.metadata.create_all(engine)
 
-
-
-
-from sqlalchemy import event
-
-@event.listens_for(engine, "connect")
-def enable_sqlite_fk(dbapi_conn, conn_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-wl = Whitelist(order_id = 'testing', player_id = 'testing12')
-session.add(wl)
+#wl = Whitelist(order_id = 'testing', player_id = 'testing12')
+#session.add(wl)
 session.commit()
