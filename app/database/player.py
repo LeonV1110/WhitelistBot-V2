@@ -159,9 +159,9 @@ class Player():
         with connection.cursor() as cursor:
             cursor.execute(sql, vars)
             res = cursor.fetchone()
-        if bool(res): 
+        if bool(res):
             return Permission(BOTID, res['permission'])
-        else: 
+        else:
             return None
 
 
