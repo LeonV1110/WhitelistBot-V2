@@ -1,14 +1,14 @@
 """A collection of utility functions"""
 from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from discord import Embed, Intents
 from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError
 from discord.ext.commands import Bot
 from discord.ui import View
 
 from app import config as cfg
-from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound
+from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound, NoStoreID, InsufficientTier, MultipleOrderPerPlayer
 from app.database import Player
 
 
@@ -49,7 +49,7 @@ def check_discordID(discordID: str):
         raise InvalidDiscordID("A discordID is at most 19 characters long, this one is too long.")
     return
 
-def convert_role_to_perm(roles):
+def convert_role_to_perm(roles): #TODO update to use new role based perms
     permission_roles = {}
     for key, value in cfg.PERMISSION_ROLES.items():
         permission_roles[int(value)] = cfg.PERMISSION_NAMES[key]
@@ -59,7 +59,7 @@ def convert_role_to_perm(roles):
         if role.id in permission_roles: return permission_roles[role.id]
     return None
 
-def convert_role_to_tier(roles):
+def convert_role_to_tier(roles): #TODO update to use new number based tiers
     whitelist_roles = {}
     for key, value in cfg.WHITELIST_ROLES.items():
         whitelist_roles[int(value)] = cfg.WHITELIST_NAMES[key]
@@ -67,6 +67,8 @@ def convert_role_to_tier(roles):
     for role in roles:
         if role.id in whitelist_roles: return whitelist_roles[role.id]
     return None
+
+
 
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, CommandInvokeError):
@@ -82,6 +84,10 @@ def command_error_embed_gen(error: Exception) -> Embed:
         if RERAISING:
             raise Exception from error
     elif isinstance(error, SQLAlchemyError):
+        print("---------------------------------------")
+        print(f"an {type(error)} error occured:")
+        print(error.orig)
+        print("---------------------------------------")
         error_str = "The bot is currently having issues, please try again later."
     else:
         print("---------------------------------------")
@@ -93,6 +99,13 @@ def command_error_embed_gen(error: Exception) -> Embed:
             raise Exception from error
     return Embed(title=error_str)
 
+def check_integrityerror(error: IntegrityError) -> None:
+    orig = str(error.orig)
+    if 'player_has_store_id' in orig:
+        raise NoStoreID from error
+    if 'whitelist_limit' in orig:
+        raise InsufficientTier from error
+    
 def create_bot(views : list[View]|None = None) -> Bot:
     if views is None:
         views = []

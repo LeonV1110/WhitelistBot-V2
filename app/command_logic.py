@@ -2,10 +2,10 @@
     commands may be triggered in multiple ways, like buttons, slash commands or events."""
 from discord import Member, Embed
 
-from pymysql import Connection, OperationalError
-
-from app.database.player import Player, NewPlayer
-from app import util, config as cfg, util2
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from app.database import Player, Whitelist_order, Role_assignment, Role
+from app import util, config as cfg
 from app.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
 
 
@@ -16,6 +16,39 @@ def update_player_from_member(connection: Connection, member: Member):
     permission = util.convert_role_to_perm(member.roles)
     name = member.name
     player.update_player(connection, player.steam64ID, discordID, name, permission, tier)
+
+
+def update_player_from_member2(session: Session, member: Member) -> None:
+    discordID = str(member.id)
+    tier = util.convert_role_to_tier(member.roles)
+    discord_roles = util.convert_role_to_perm(member.roles)
+
+    player = Player.get_by_id(session, discordID)
+
+    player.name = member.name
+
+    whitelist_order:Whitelist_order|None = player.whitelist_order
+    if whitelist_order is not None:
+        whitelist_order.tier = tier
+        whitelist_order.check_and_update_whitelist_count()
+        whitelist_order.check_and_update_active()
+
+    db_role_assignments:list[Role_assignment] = player.role_assignments
+    for db_role_assignment in list(db_role_assignments): #using list cast to create a copy
+        if db_role_assignment.role.name not in discord_roles:
+            player.role_assignments.remove(db_role_assignment)
+
+    for role_name in discord_roles:
+        db_role_names = [x.role.name for x in db_role_assignments]
+        if role_name not in db_role_names:
+            db_role = Role.get_by_name(session, role_name)
+            player.role_assignments.append(Role_assignment(player = player, role = db_role))
+    try:
+        session.commit()
+    except IntegrityError as e:
+        session.rollback()
+        util.check_integrityerror(e)
+        raise
 
 def deactivate_whitelist_order(connection: Connection, member: Member):
     discordID = str(member.id)

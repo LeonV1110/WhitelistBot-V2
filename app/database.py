@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine, select, or_
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 import app.events
-from app.exceptions import PlayerNotFound
+from app.exceptions import PlayerNotFound, RoleNotFound
 from __future__ import annotations
 
 Base = declarative_base()
@@ -16,7 +16,7 @@ class Player(Base):
     eos_id              = Column(String(32), nullable=True, unique=True)
     #TODO double check if eosID is actually max 32 characters
 
-    whitelist_order     = relationship('Whitelist_order', back_populates='player')
+    whitelist_order     = relationship('Whitelist_order', back_populates='player', uselist=False)
     role_assignments    = relationship('Role_assignment', back_populates='player')
     whitelist           = relationship('Whitelist', back_populates='player')
 
@@ -49,8 +49,8 @@ class Role_assignment(Base):
     role_id     = Column(String(36), ForeignKey('roles.role_id'), primary_key=True)
     #TODO add server assignment
 
-    player      = relationship('Player', back_populates='role_assignments')
-    role        = relationship('Role', back_populates='role_assignments')
+    player      = relationship('Player', back_populates='role_assignments', uselist=False)
+    role        = relationship('Role', back_populates='role_assignments', uselist=False)
 
 class Role(Base):
     __tablename__ = 'roles'
@@ -58,8 +58,17 @@ class Role(Base):
     role_id     = Column(String(36), primary_key=True)
     name        = Column(String, nullable= False)
 
+    @classmethod
+    def get_by_name(cls, session:Session, name: str) -> Role:
+        stmt = select(cls).where(cls.name == name)
+        role = session.scalar(stmt)
+        if role is None:
+            raise RoleNotFound()
+        else:
+            return role
+
     permission_assignment   = relationship('Permission_assignment', back_populates='role')
-    role_assignments        = relationship('Role_assignment', back_populates='role')
+    role_assignments        = relationship('Role_assignment', back_populates='role', uselist=False)
 
 class Permission_assignment(Base):
     __tablename__ = 'permission_assignments'
@@ -67,8 +76,8 @@ class Permission_assignment(Base):
     permission_id   = Column(String(36), ForeignKey('permissions.permission_id'), primary_key=True)
     role_id         = Column(String(36), ForeignKey('roles.role_id'), primary_key=True)
 
-    role            = relationship('Role', back_populates='permission_assignment')
-    permission      = relationship('Permission', back_populates='permission_assignment')
+    role            = relationship('Role', back_populates='permission_assignment', uselist=False)
+    permissions      = relationship('Permission', back_populates='permission_assignments')
 
 class Permission(Base):
     __tablename__ = 'permissions'
@@ -76,7 +85,7 @@ class Permission(Base):
     permission_id   = Column(String(36), primary_key=True)
     name            = Column(String, nullable=False)
 
-    permission_assignment = relationship('Permission_assignment', back_populates='permission')
+    permission_assignments = relationship('Permission_assignment', back_populates='permissions')
 
 class Whitelist_order(Base):
     __tablename__ = 'whitelist_orders'
@@ -87,8 +96,27 @@ class Whitelist_order(Base):
     active          = Column(Boolean, default=True, nullable=False)
     whitelist_count = Column(Integer, default=0)
 
-    player          = relationship('Player', back_populates='whitelist_order')
+    player          = relationship('Player', back_populates='whitelist_order', uselist = False)
     whitelists      = relationship('Whitelist', back_populates='whitelist_order')
+
+    def check_and_update_whitelist_count(self) -> None | tuple[int, int]:
+        """Counts the number of whitelists on the current state in the session and updates it if wrong
+        returns tuple of (old, new) if updated
+        should always be used in conjunction with check_and_update_active"""
+        new_count = len(self.whitelists)
+        old_count = self.whitelist_count
+        if old_count != new_count:
+            self.whitelist_count = new_count
+            return (old_count, new_count)
+
+    def check_and_update_active(self) -> None | bool:
+        """checks if the tier is sufficient
+        assumes whitelist count is correct
+        returns new value if updated"""
+        if not self.active and self.tier >= self.whitelist_count:
+            self.active = True
+        elif self.active and self.tier < self.whitelist_count:
+            self.active = False
 
     __table_args__ = (
         CheckConstraint('NOT active OR whitelist_count <= tier', name='whitelist_limit'),

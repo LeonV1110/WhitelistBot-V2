@@ -1,9 +1,8 @@
 """Contians all modals"""
 from discord import Embed, TextStyle, Interaction
-from discord.ext.commands import Context
 from discord.ui import Modal, TextInput
 from app import command_logic as cl
-from app.util import connect_database, command_error_embed_gen
+from app.util import command_error_embed_gen
 
 class RegisterModal(Modal):
     def __init__(self):

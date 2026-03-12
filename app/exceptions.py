@@ -61,3 +61,13 @@ class FFS(MyException):
     def __init__(self, message:str = "????????"):
         self.message = message
         super().__init__(self.message)
+
+class NoStoreID(MyException):
+    def __init__(self, message:str = "You must have at least a steam64ID or an EOSID, first add both before removing one."):
+        self.message = message
+        super().__init__(self.message)
+
+class RoleNotFound(MyException):
+    def __init__(self, message:str = "This role does not exist."):
+        self.message = message
+        super().__init__(self.message)
