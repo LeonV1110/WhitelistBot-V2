@@ -1,14 +1,17 @@
 """A collection of utility functions"""
-import pymysql
-
-from pymysql import Connection, OperationalError
+from sqlalchemy import select, or_
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from discord import Embed, Intents
 from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError
 from discord.ext.commands import Bot
 from discord.ui import View
+
 from app import config as cfg
 from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound
-from app.database.player import DatabasePlayer, SteamPlayer, BOTIDPlayer, Player
+from app.database import Player
+
+
 
 RERAISING = False # dev config option to make the program reraise errors for a proper stacktrace instead of replying to the user
 #TODO should be possible to have both
@@ -46,20 +49,6 @@ def check_discordID(discordID: str):
         raise InvalidDiscordID("A discordID is at most 19 characters long, this one is too long.")
     return
 
-
-def get_player(connection: Connection, discordID: str = None, steam64ID: str = None, BOTID: str = None) -> Player:
-    if discordID is not None:
-        check_discordID(discordID)
-        player = DatabasePlayer(discordID, connection)
-    elif steam64ID is not None:
-        check_steam64ID(steam64ID)
-        player = SteamPlayer(steam64ID, connection)
-    elif BOTID is not None:
-        player = BOTIDPlayer(BOTID, connection)
-    else:
-        raise PlayerNotFound()
-    return player
-
 def convert_role_to_perm(roles):
     permission_roles = {}
     for key, value in cfg.PERMISSION_ROLES.items():
@@ -92,7 +81,7 @@ def command_error_embed_gen(error: Exception) -> Embed:
         error_str = str(error)
         if RERAISING:
             raise Exception from error
-    elif isinstance(error, OperationalError):
+    elif isinstance(error, SQLAlchemyError):
         error_str = "The bot is currently having issues, please try again later."
     else:
         print("---------------------------------------")
@@ -104,11 +93,9 @@ def command_error_embed_gen(error: Exception) -> Embed:
             raise Exception from error
     return Embed(title=error_str)
 
-def connect_database() -> pymysql.connections.Connection:
-    connection = pymysql.connect(host=cfg.DATABASEHOST, port = int(cfg.DATABASEPORT), user = cfg.DATABASEUSER, password= cfg.DATABASEPSW, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor, database=cfg.DATABASENAME)
-    return connection
-
-def create_bot(views : list[View] = []) -> Bot:
+def create_bot(views : list[View]|None = None) -> Bot:
+    if views is None:
+        views = []
     intents = Intents.default()
     intents.members = True
     intents.message_content = True #TODO Likely not needed
