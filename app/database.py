@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine, select, or_
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 import app.events
-
+from app.exceptions import PlayerNotFound
+from __future__ import annotations
 
 Base = declarative_base()
 
@@ -23,6 +24,23 @@ class Player(Base):
         CheckConstraint('steam64_id IS NOT NULL OR eos_id IS NOT NULL',
                         name = 'player_has_store_id'),
     )
+
+    @classmethod
+    def get_by_id(cls, session: Session, id: str) -> Player:
+        # Check if id is a UUID, if so it's likely the player_id, to try that
+        if len(id) == 36:
+            return session.get(cls, id)
+        stmt = select(cls).where(or_(
+            cls.discord_id == id,
+            cls.steam64_id == id,
+            cls.eos_id == id,
+        ))
+        player = session.scalar(stmt)
+        if player is None:
+            raise PlayerNotFound()
+        else:
+            return player
+
 
 class Role_assignment(Base):
     __tablename__ = 'role_assignments'
@@ -87,8 +105,8 @@ class Whitelist(Base):
     player          = relationship('Player', back_populates='whitelist')
 
 engine = create_engine('sqlite:///test.db', echo=True)
-Session = sessionmaker(bind=engine)
-session = Session()
+Session_ = sessionmaker(bind=engine)
+session = Session_()
 Base.metadata.create_all(engine)
 
 #wl = Whitelist(order_id = 'testing', player_id = 'testing12')
