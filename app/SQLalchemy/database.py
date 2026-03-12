@@ -1,5 +1,7 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+import events
+
 
 Base = declarative_base()
 
@@ -19,7 +21,7 @@ class Player(Base):
 
     __table_args__ = (
         CheckConstraint('steam64_id IS NOT NULL OR eos_id IS NOT NULL',
-                        name = 'player_has_store_id')
+                        name = 'player_has_store_id'),
     )
 
 class Role_assignment(Base):
@@ -72,7 +74,7 @@ class Whitelist_order(Base):
 
     __table_args__ = (
         CheckConstraint('NOT active OR whitelist_count <= tier', name='whitelist_limit'),
-        UniqueConstraint('player_id', name='one_active_order_per_player')
+        UniqueConstraint('player_id', name='one_active_order_per_player'),
     )
 
 class Whitelist(Base):
@@ -83,3 +85,23 @@ class Whitelist(Base):
 
     whitelist_order = relationship('Whitelist_order', back_populates='whitelists')
     player          = relationship('Player', back_populates='whitelist')
+
+engine = create_engine('sqlite:///test.db', echo=True)
+Session = sessionmaker(bind=engine)
+session = Session()
+Base.metadata.create_all(engine)
+
+
+
+
+from sqlalchemy import event
+
+@event.listens_for(engine, "connect")
+def enable_sqlite_fk(dbapi_conn, conn_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+wl = Whitelist(order_id = 'testing', player_id = 'testing12')
+session.add(wl)
+session.commit()

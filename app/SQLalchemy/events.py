@@ -1,8 +1,21 @@
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import Session
+from sqlalchemy.engine import Engine
 from database import Whitelist, Whitelist_order
 
 
+# 
+
+from sqlalchemy import event
+
+@event.listens_for(Engine, "connect")
+def enable_sqlite_fk(dbapi_conn, conn_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+# Auto update whitelist count from within this app
 @event.listens_for(Session, "before_flush")
 def update_whitelist_counts(session, flush_context, instances):
 
