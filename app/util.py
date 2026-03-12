@@ -19,7 +19,7 @@ def check_steam64ID(steam64ID: str):
     str(steam64ID)
     try:
         int(steam64ID)
-    except Exception as e:
+    except ValueError as e:
         raise InvalidSteam64ID(f'A steam64ID contains just numbers. You provided "{steam64ID}"') from e
     #check if not default steam64ID
     if (steam64ID == str(76561197960287930)):
