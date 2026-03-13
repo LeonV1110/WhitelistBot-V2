@@ -18,7 +18,7 @@ class Player(Base):
 
     whitelist_order     = relationship('Whitelist_order', back_populates='player', uselist=False, cascade="all, delete-orphan")
     role_assignments    = relationship('Role_assignment', back_populates='player', cascade="all, delete-orphan")
-    whitelist           = relationship('Whitelist', back_populates='player', cascade="all, delete-orphan")
+    whitelists           = relationship('Whitelist', back_populates='player', cascade="all, delete-orphan")
 
     __table_args__ = (
         CheckConstraint('steam64_id IS NOT NULL OR eos_id IS NOT NULL',
@@ -129,8 +129,8 @@ class Whitelist(Base):
     order_id    = Column(String(36), ForeignKey('whitelist_orders.order_id'), primary_key=True)
     player_id   = Column(String(36), ForeignKey('players.player_id'), primary_key=True)
 
-    whitelist_order = relationship('Whitelist_order', back_populates='whitelists')
-    player          = relationship('Player', back_populates='whitelist')
+    whitelist_order = relationship('Whitelist_order', uselist=False, back_populates='whitelists')
+    player          = relationship('Player', uselist=False, back_populates='whitelists')
 
 engine = create_engine('sqlite:///test.db', echo=True)
 Session_ = sessionmaker(bind=engine)

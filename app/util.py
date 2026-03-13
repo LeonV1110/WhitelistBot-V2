@@ -8,7 +8,7 @@ from discord.ext.commands import Bot
 from discord.ui import View
 
 from app import config as cfg
-from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound, NoStoreID, InsufficientTier, MultipleOrderPerPlayer
+from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound, NoStoreID, InsufficientTier
 from app.database import Player
 
 
@@ -17,7 +17,7 @@ RERAISING = False # dev config option to make the program reraise errors for a p
 #TODO should be possible to have both
 
 
-def check_steam64ID(steam64ID: str):
+def check_steam64_id(steam64ID: str):
     #check if int
     str(steam64ID)
     try:
@@ -36,6 +36,10 @@ def check_steam64ID(steam64ID: str):
     if (len(steam64ID) > 17):
         raise InvalidSteam64ID("This is not a valid steam64ID, as it is longer than 17 characters.")
     return 
+
+def check_eos_id(eos_id: str):
+    #TODO check eos id for validity
+    return
 
 def check_discordID(discordID: str):
     str(discordID)

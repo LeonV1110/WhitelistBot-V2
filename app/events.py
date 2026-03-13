@@ -25,12 +25,12 @@ def update_whitelist_counts(session, flush_context, instances):
     # New whitelist rows
     for obj in session.new:
         if isinstance(obj, Whitelist):
-            change(obj.order, +1)
+            change(obj.wthitelist_oder, +1)
 
     # Deleted whitelist rows
     for obj in session.deleted:
         if isinstance(obj, Whitelist):
-            change(obj.order, -1)
+            change(obj.wthitelist_oder, -1)
 
     # Updated rows (moved to another order)
     for obj in session.dirty:
