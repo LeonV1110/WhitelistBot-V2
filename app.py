@@ -12,6 +12,7 @@ from app.exceptions import MyException
 import app.command_logic as cl
 from app.util import command_error_embed_gen, create_bot
 from app.database import get_session, Player
+import app.events
 
 
 bot = create_bot()
