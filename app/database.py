@@ -16,9 +16,9 @@ class Player(Base):
     eos_id              = Column(String(32), nullable=True, unique=True)
     #TODO double check if eosID is actually max 32 characters
 
-    whitelist_order     = relationship('Whitelist_order', back_populates='player', uselist=False)
-    role_assignments    = relationship('Role_assignment', back_populates='player')
-    whitelist           = relationship('Whitelist', back_populates='player')
+    whitelist_order     = relationship('Whitelist_order', back_populates='player', uselist=False, cascade="all, delete-orphan")
+    role_assignments    = relationship('Role_assignment', back_populates='player', cascade="all, delete-orphan")
+    whitelist           = relationship('Whitelist', back_populates='player', cascade="all, delete-orphan")
 
     __table_args__ = (
         CheckConstraint('steam64_id IS NOT NULL OR eos_id IS NOT NULL',
@@ -67,8 +67,8 @@ class Role(Base):
         else:
             return role
 
-    permission_assignment   = relationship('Permission_assignment', back_populates='role')
-    role_assignments        = relationship('Role_assignment', back_populates='role', uselist=False)
+    permission_assignment   = relationship('Permission_assignment', back_populates='role', cascade="all, delete-orphan")
+    role_assignments        = relationship('Role_assignment', back_populates='role', uselist=False, cascade="all, delete-orphan")
 
 class Permission_assignment(Base):
     __tablename__ = 'permission_assignments'
@@ -85,7 +85,7 @@ class Permission(Base):
     permission_id   = Column(String(36), primary_key=True)
     name            = Column(String, nullable=False)
 
-    permission_assignments = relationship('Permission_assignment', back_populates='permissions')
+    permission_assignments = relationship('Permission_assignment', back_populates='permissions', cascade="all, delete-orphan")
 
 class Whitelist_order(Base):
     __tablename__ = 'whitelist_orders'
@@ -97,7 +97,7 @@ class Whitelist_order(Base):
     whitelist_count = Column(Integer, default=0)
 
     player          = relationship('Player', back_populates='whitelist_order', uselist = False)
-    whitelists      = relationship('Whitelist', back_populates='whitelist_order')
+    whitelists      = relationship('Whitelist', back_populates='whitelist_order', cascade="all, delete-orphan")
 
     def check_and_update_whitelist_count(self) -> None | tuple[int, int]:
         """Counts the number of whitelists on the current state in the session and updates it if wrong
