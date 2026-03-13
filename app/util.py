@@ -1,6 +1,6 @@
 """A collection of utility functions"""
 from sqlalchemy import select, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from discord import Embed, Intents
 from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError

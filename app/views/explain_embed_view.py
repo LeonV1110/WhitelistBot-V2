@@ -1,7 +1,8 @@
 from discord.ui import View, button, Button
 from discord import Interaction, ButtonStyle, Embed
 from app.modals import RegisterModal, AddFriendModal, UpdateSteamIDModal, RemoveDataModal, RemoveFriendModal
-from app.util import command_error_embed_gen, connect_database
+from app.util import command_error_embed_gen
+from app.database import get_session
 import app.command_logic as cl
 
 class ExplainEmbedView(View):
@@ -24,9 +25,8 @@ class ExplainEmbedView(View):
     async def get_player_info(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
         try:
-            with connect_database() as connection:
-                embed = cl.get_player_info(connection, member = inter.user)
-                connection.commit()
+            with get_session() as session:
+                embed = cl.get_player_info(session, member = inter.user)
         except Exception as error:
             await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
             return
@@ -36,9 +36,8 @@ class ExplainEmbedView(View):
     async def get_whitelist_info(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
         try:
-            with connect_database() as connection:
-                embed = cl.get_whitelist_info(connection, member=inter.user)
-                connection.commit()
+            with get_session() as session:
+                embed = cl.get_whitelist_info(session, member=inter.user)
         except Exception as error:
             await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
             return
@@ -48,9 +47,8 @@ class ExplainEmbedView(View):
     async def update_data(self, inter: Interaction, button: Button):
         await inter.response.defer(ephemeral=True)
         try:
-            with connect_database() as connection:
-                cl.update_player_from_member(connection, member= inter.user)
-                connection.commit()
+            with get_session() as session:
+                cl.update_player_from_member(session, member= inter.user)
         except Exception as error:
             await inter.followup.send(embed=command_error_embed_gen(error), ephemeral=True)
             return

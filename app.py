@@ -10,7 +10,8 @@ from app import config as cfg
 from app.views.explain_embed_view import ExplainEmbedView
 from app.exceptions import MyException
 import app.command_logic as cl
-from app.util import command_error_embed_gen, get_player, connect_database, create_bot
+from app.util import command_error_embed_gen, create_bot
+from app.database import get_session, Player
 
 
 bot = create_bot()
@@ -40,25 +41,22 @@ async def on_ready():
 async def on_member_update(before: Member, after: Member) -> None: # pylint: disable=unused-argument
     """Function that is ran whenever a members role, nickname, etc. is updated"""
     try:
-        with connect_database() as connection:
-            cl.update_player_from_member(connection, member=after)
-            connection.commit()
+        with get_session() as session:
+            cl.update_player_from_member(session, member=after)
     except MyException:
         pass
     return
 
 @bot.event
 async def on_raw_member_remove(payload) -> None:
-    with connect_database() as connection:
-        cl.deactivate_whitelist_order(connection, member = payload.user)
-        connection.commit()
+    with get_session() as session:
+        cl.deactivate_whitelist_order(session, member = payload.user)
     return
 
 @bot.event
 async def on_member_join(member: Member):
-    with connect_database() as connection:
-        cl.update_player_from_member(connection, member)
-        connection.commit()
+    with get_session() as session:
+        cl.update_player_from_member(session, member)
     return
 
 #######################################
@@ -90,20 +88,15 @@ async def sayHello(inter, member: Member):
 @discord.app_commands.checks.has_any_role(*cfg.ADMIN_ROLES)
 async def admin_get_player_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
     await inter.response.defer()
-    if member is not None:
-        with connect_database() as connection:
-            embed = cl.get_player_info(connection, member=member)
-            connection.commit()
-    elif discordid is not None:
-        with connect_database() as connection:
-            embed = cl.get_player_info(connection, discordID=discordid)
-            connection.commit()
-    elif steam64id is not None:
-        with connect_database() as connection:
-            embed = cl.get_player_info(connection, steam64ID=steam64id)
-            connection.commit()
-    else:
-        embed = Embed(title='Please use one of the options')
+    with get_session() as session:
+        if member is not None:
+            embed = cl.get_player_info(session, member=member)
+        elif discordid is not None:
+            embed = cl.get_player_info(session, id=discordid)
+        elif steam64id is not None:
+            embed = cl.get_player_info(session, id=steam64id)
+        else:
+            embed = Embed(title='Please use one of the options')
     await inter.followup.send(embed=embed)
 
 @admin_get_player_info.error
@@ -118,20 +111,16 @@ async def admin_get_player_info_error(inter: Interaction, error: Exception):
 @discord.app_commands.checks.has_any_role(*cfg.ADMIN_ROLES)
 async def admin_get_whitelist_info(inter: Interaction, member: Member = None, discordid:str = None, steam64id: str = None) -> None:
     await inter.response.defer()
-    if member is not None:
-        with connect_database() as connection:
-            embed = cl.get_whitelist_info(connection, member=member)
-            connection.commit()
-    elif discordid is not None:
-        with connect_database() as connection:
-            embed = cl.get_whitelist_info(connection, discordID=discordid)
-            connection.commit()
-    elif steam64id is not None:
-        with connect_database() as connection:
-            embed = cl.get_whitelist_info(connection, steam64ID=steam64id)
-            connection.commit()
-    else:
-        embed = Embed(title='Please use one of the options')
+    with get_session() as session:
+        if member is not None:
+                embed = cl.get_whitelist_info(session, member=member)
+        elif discordid is not None:
+                embed = cl.get_whitelist_info(session, id=discordid)
+        elif steam64id is not None:
+                embed = cl.get_whitelist_info(session, id=steam64id)
+        else:
+            embed = Embed(title='Please use one of the options')
+    
     await inter.followup.send(embed=embed)
 
 @admin_get_whitelist_info.error
@@ -151,16 +140,15 @@ async def admin_get_whitelist_info_error(inter: Interaction, error: Exception):
 @discord.app_commands.checks.has_any_role(*cfg.DELETE_ROLES)
 async def admin_nuke_player(inter: Interaction, discordid: str, steam64id: str) -> None:
     await inter.response.defer()
-    with connect_database() as connection:
-        discord_player = get_player(connection, discordID=discordid)
-        steam_player = get_player(connection, steam64ID=steam64id)
-        if discord_player == steam_player:
-            cl.remove_player(connection, discordID=discordid)
-            connection.commit()
-            embed = Embed(title = f"{discord_player.name} has been successfully deleted from the database.")
+    with get_session() as session:
+
+        player = Player.get_by_id(session, id=discordid)
+        if player.steam64_id == steam64id:
+            cl.remove_player(session, id=discordid)
+            embed = Embed(title = f"{player.name} has been successfully deleted from the database.")
         else:
             embed = Embed(
-                title = f"The discordID is from {discord_player.name} while the steamId is from {steam_player.name}. Double check and try again. If the issue persists you can annoy Leon I guess...")
+                title = f"The discordID is from {player.name} while the steamId is from {Player.get_by_id(session, id=steam64id).name}. Double check and try again. If the issue persists you can annoy Leon I guess...")
     await inter.followup.send(embed=embed)
 
 @admin_nuke_player.error

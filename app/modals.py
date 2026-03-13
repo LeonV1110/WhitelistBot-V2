@@ -3,6 +3,7 @@ from discord import Embed, TextStyle, Interaction
 from discord.ui import Modal, TextInput
 from app import command_logic as cl
 from app.util import command_error_embed_gen
+from app.database import get_session
 
 class RegisterModal(Modal):
     def __init__(self):
@@ -16,9 +17,9 @@ class RegisterModal(Modal):
 
     async def on_submit(self, inter: Interaction):
         print(f"we are registering a player with id: {self.steam64ID}")
-        with connect_database() as connection:
-            cl.register_player(connection, member=inter.user, steam64ID=str(self.steam64ID))
-            connection.commit()
+        with get_session() as session:
+            cl.register_player(session, member=inter.user, steam64_id=str(self.steam64ID))
+            session.commit()
         await inter.response.send_message(embed=Embed(title='Registration was successful'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
@@ -37,9 +38,9 @@ class AddFriendModal(Modal):
 
     async def on_submit(self, inter: Interaction):
         print(f"we are registering a friend with id: {self.friend_steam64ID}")
-        with connect_database() as connection:
-            cl.add_player_to_whitelist(connection, owner_member=inter.user, player_steam64ID=str(self.friend_steam64ID))
-            connection.commit()
+        with get_session() as session:
+            cl.add_player_to_whitelist(session, owner_member=inter.user, player_id=str(self.friend_steam64ID))
+            session.commit()
         await inter.response.send_message(embed=Embed(title='Your friend was successfully added'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
@@ -58,9 +59,9 @@ class UpdateSteamIDModal(Modal):
 
     async def on_submit(self,  inter: Interaction):
         print(f'We are updating the steam64ID to {self.new_steam64ID}')
-        with connect_database() as connection:
-            cl.change_steam64ID(connection, inter.user, steam64ID=self.new_steam64ID)
-            connection.commit()
+        with get_session() as session:
+            cl.change_steam64_id(session, inter.user, steam64_id=self.new_steam64ID)
+            session.commit()
         await inter.response.send_message(embed = Embed(title='Your Steam64ID was successfully updated.'), ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):
@@ -83,9 +84,9 @@ class RemoveDataModal(Modal):
 
         if message == "DELETE":
             print(f'We are deleting the account of {inter.user}')
-            with connect_database() as connection:
-                cl.remove_player(connection=connection, member = inter.user)
-                connection.commit()
+            with get_session() as session:
+                cl.remove_player(session=session, member = inter.user)
+                session.commit()
         else: 
             embed = Embed(title='Nothing happened, and your data is still in the database.')
 
@@ -108,9 +109,9 @@ class RemoveFriendModal(Modal):
     async def on_submit(self,  inter: Interaction):
         embed = Embed(title='Your friend was successfully removed')
         print(f'We are removing "{self.friend_steamID}" as a friend from {inter.user.name}')
-        with connect_database() as connection:
-            cl.remove_player_from_whitelist(connection, owner_member=inter.user, player_steam64ID=str(self.friend_steamID))
-            connection.commit()
+        with get_session() as session:
+            cl.remove_player_from_whitelist(session, owner_member=inter.user, player_id=str(self.friend_steamID))
+            session.commit()
         await inter.response.send_message(embed=embed, ephemeral=True)
 
     async def on_error(self, inter: Interaction, error: Exception):

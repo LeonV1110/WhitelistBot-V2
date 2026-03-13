@@ -37,7 +37,7 @@ class Player(Base):
         ))
         player = session.scalar(stmt)
         if player is None:
-            raise PlayerNotFound()
+            raise PlayerNotFound(f'The player with id {id} was not found.')
         else:
             return player
 
@@ -132,9 +132,13 @@ class Whitelist(Base):
     whitelist_order = relationship('Whitelist_order', uselist=False, back_populates='whitelists')
     player          = relationship('Player', uselist=False, back_populates='whitelists')
 
-engine = create_engine('sqlite:///test.db', echo=True)
-Session_ = sessionmaker(bind=engine)
-session = Session_()
+engine = create_engine('sqlite:///test.db', echo=True) #TODO make engine be buildt from cfg file
+SESSION_LOCAL = sessionmaker(bind=engine, expire_on_commit=False)
+
+def get_session() -> Session:
+    return SESSION_LOCAL()
+
+session = SESSION_LOCAL()
 Base.metadata.create_all(engine)
 
 #wl = Whitelist(order_id = 'testing', player_id = 'testing12')
