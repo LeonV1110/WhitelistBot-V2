@@ -9,4 +9,4 @@ config.py -> Done, except for new configs
 exceptions.py -> Done
 modals.py -> Done
 util.py -> Done
-util2.py -> should be obsolete
+util2.py -> should be obsolete -> thus removed
