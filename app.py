@@ -10,9 +10,10 @@ from app import config as cfg
 from app.views.explain_embed_view import ExplainEmbedView
 from app.exceptions import MyException
 import app.command_logic as cl
-from app.util import command_error_embed_gen, create_bot
+from app.util import command_error_embed_gen, create_bot, get_db_string
 from app.database import get_session, Player
 import app.events
+from app.setup import initial_setup, check_setup
 
 
 bot = create_bot()
@@ -224,4 +225,12 @@ async def explain_embed_setup_error(inter: Interaction, error):
         await inter.followup.send(embed=command_error_embed_gen(error))
 
 if __name__ == "__main__":
+    if not cfg.check_config_validity():
+        raise ValueError('Config file is invalid.')
+    
+    if not cfg.SETUP_DONE:
+        initial_setup()
+    else:
+        check_setup()
+
     bot.run(cfg.TOKEN)

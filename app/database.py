@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine, select, or_
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
 from app.exceptions import PlayerNotFound, RoleNotFound
-
+from app.util import get_db_string
 
 Base = declarative_base()
 
@@ -67,7 +67,7 @@ class Role(Base):
         else:
             return role
 
-    permission_assignment   = relationship('Permission_assignment', back_populates='role', cascade="all, delete-orphan")
+    permission_assignments   = relationship('Permission_assignment', back_populates='role', cascade="all, delete-orphan")
     role_assignments        = relationship('Role_assignment', back_populates='role', uselist=False, cascade="all, delete-orphan")
 
 class Permission_assignment(Base):
@@ -76,8 +76,8 @@ class Permission_assignment(Base):
     permission_id   = Column(String(36), ForeignKey('permissions.permission_id'), primary_key=True)
     role_id         = Column(String(36), ForeignKey('roles.role_id'), primary_key=True)
 
-    role            = relationship('Role', back_populates='permission_assignment', uselist=False)
-    permissions      = relationship('Permission', back_populates='permission_assignments')
+    role            = relationship('Role', back_populates='permission_assignments', uselist=False)
+    permission      = relationship('Permission', back_populates='permission_assignments', uselist=False)
 
 class Permission(Base):
     __tablename__ = 'permissions'
@@ -85,7 +85,7 @@ class Permission(Base):
     permission_id   = Column(String(36), primary_key=True)
     name            = Column(String, nullable=False)
 
-    permission_assignments = relationship('Permission_assignment', back_populates='permissions', cascade="all, delete-orphan")
+    permission_assignments = relationship('Permission_assignment', back_populates='permission', cascade="all, delete-orphan")
 
 class Whitelist_order(Base):
     __tablename__ = 'whitelist_orders'
@@ -132,15 +132,8 @@ class Whitelist(Base):
     whitelist_order = relationship('Whitelist_order', uselist=False, back_populates='whitelists')
     player          = relationship('Player', uselist=False, back_populates='whitelists')
 
-engine = create_engine('sqlite:///test.db', echo=True) #TODO make engine be buildt from cfg file
+engine = create_engine(get_db_string(), echo=True)
 SESSION_LOCAL = sessionmaker(bind=engine, expire_on_commit=False)
 
 def get_session() -> Session:
     return SESSION_LOCAL()
-
-session = SESSION_LOCAL()
-Base.metadata.create_all(engine)
-
-#wl = Whitelist(order_id = 'testing', player_id = 'testing12')
-#session.add(wl)
-session.commit()

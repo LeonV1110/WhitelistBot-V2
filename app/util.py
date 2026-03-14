@@ -9,7 +9,6 @@ from discord.ui import View
 
 from app import config as cfg
 from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound, NoStoreID, InsufficientTier
-from app.database import Player
 
 
 
@@ -53,10 +52,20 @@ def check_discordID(discordID: str):
         raise InvalidDiscordID("A discordID is at most 19 characters long, this one is too long.")
     return
 
+def convert_discord_role_to_roles(roles):
+    permission_roles = {}
+    for key, value in cfg.ROLE_ROLES.items():
+        permission_roles[int(value)] = cfg.ROLE_ROLES[key]
+    
+    roles.reverse()
+    for role in roles:
+        if role.id in permission_roles: #TODO
+            pass
+
 def convert_role_to_perm(roles): #TODO update to use new role based perms
     permission_roles = {}
-    for key, value in cfg.PERMISSION_ROLES.items():
-        permission_roles[int(value)] = cfg.PERMISSION_NAMES[key]
+    for key, value in cfg.ROLE_ROLES.items():
+        permission_roles[int(value)] = cfg.ROLE_ROLES[key]
 
     roles.reverse()
     for role in roles:
@@ -71,8 +80,6 @@ def convert_role_to_tier(roles): #TODO update to use new number based tiers
     for role in roles:
         if role.id in whitelist_roles: return whitelist_roles[role.id]
     return None
-
-
 
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, CommandInvokeError):
@@ -120,3 +127,6 @@ def create_bot(views : list[View]|None = None) -> Bot:
     for view in views:
         bot.add_view(view)
     return bot
+
+def get_db_string() -> str:
+    return 'sqlite:///test.db' #TODO
