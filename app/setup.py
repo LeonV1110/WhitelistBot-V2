@@ -64,12 +64,12 @@ def check_and_load_perm_assignments() -> None:
     # Checks all perms assignments
     with get_session() as session:
         
-        roles = zip([name for name in cfg.ROLE_NAMES], [perms for perms in cfg.PERMISSIONS_PER_ROLE])
+        roles = zip(cfg.ROLE_NAMES, cfg.PERMISSIONS_PER_ROLE)
         for name, perms in roles:
-
             db_role = session.scalar(select(Role)).where(Role.name == name)
             if db_role is None:
                 raise ValueError(f'role: {name} was not found in the db')
+            
             db_perm_asses = db_role.permission_assignments
             db_perm_names = [db_perm_ass.permission.name for db_perm_ass in db_perm_asses]
 
