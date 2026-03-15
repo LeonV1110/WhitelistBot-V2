@@ -1,7 +1,6 @@
 from __future__ import annotations
-from modules.config import get_db_string
-from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine, select, or_
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
+from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, select, or_, create_engine
+from sqlalchemy.orm import declarative_base, relationship, Session, sessionmaker, scoped_session
 from modules.exceptions import PlayerNotFound, RoleNotFound
 
 Base = declarative_base()
@@ -132,8 +131,11 @@ class Whitelist(Base):
     whitelist_order = relationship('Whitelist_order', uselist=False, back_populates='whitelists')
     player          = relationship('Player', uselist=False, back_populates='whitelists')
 
-engine = create_engine(get_db_string(), echo=True)
-SESSION_LOCAL = sessionmaker(bind=engine, expire_on_commit=False)
+
+def init_db(database_url):
+    global engine, SESSION_LOCAL
+    engine = create_engine(database_url)
+    SESSION_LOCAL = sessionmaker(bind=engine)
 
 def get_session() -> Session:
     return SESSION_LOCAL()

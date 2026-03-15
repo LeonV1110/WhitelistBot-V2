@@ -8,7 +8,7 @@ from discord.ext.commands import Bot
 from discord import Intents
 from discord.ui import View
 
-from modules.database import engine, Base, get_session, Permission, Role, Permission_assignment
+from modules.database import Base, get_session, Permission, Role, Permission_assignment, engine
 import modules.config as cfg
 
 GAME_PERMISSIONS = [

@@ -2,12 +2,13 @@
 
 from modules import config as cfg, discord_events, db_events
 from modules.setup import create_bot, check_setup, ensure_db_driver
-
+from modules.database import init_db
 
 if __name__ == "__main__":
     if not cfg.check_config_validity():
         raise ValueError('Config file is invalid.')
 
+    init_db(cfg.get_db_string())
     ensure_db_driver(cfg.get_db_string().split(':')[0])
     check_setup()
 
@@ -16,3 +17,4 @@ if __name__ == "__main__":
     bot = create_bot()
     discord_events.init(bot)
     bot.run(cfg.TOKEN)
+    

@@ -1,4 +1,5 @@
 """Import configs into global variables"""
+# NOTE: one of the few local modules imported during initialization, don't import other local modules here
 import configparser
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -7,12 +8,6 @@ config = configparser.ConfigParser()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 config.read(BASE_DIR / "config.ini")
-
-DATABASEUSER = config['DATABASE']['DATABASE_USERNAME']
-DATABASEPSW = config['DATABASE']['DATABASE_PASSWORD']
-DATABASEHOST = config['DATABASE']['DATABASE_HOST']
-DATABASEPORT = config['DATABASE']['DATABASE_PORT']
-DATABASENAME = config['DATABASE']['DATABASE_NAME']
 
 TOKEN = config['DISCORD']['TOKEN']
 GUILD_IDS = [int(config['DISCORD']['GUILDID'])]
@@ -44,7 +39,7 @@ ADMIN_ROLES = tuple([int(s.strip()) for s in config['DISCORD_COMMAND_PERMISSIONS
 
 
 def check_config_validity() -> bool:
-    for config in [TOKEN, GUILD_IDS, BOTNAME, WHITELIST_LINK, DATABASEUSER, DATABASEPSW, DATABASEHOST, DATABASEPORT, DATABASENAME]:
+    for config in [TOKEN, GUILD_IDS, BOTNAME, WHITELIST_LINK]:
         if config == 'TODO':
             return False
     return True
