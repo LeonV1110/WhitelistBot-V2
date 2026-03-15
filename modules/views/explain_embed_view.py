@@ -1,9 +1,9 @@
 from discord.ui import View, button, Button
 from discord import Interaction, ButtonStyle, Embed
-from app.modals import RegisterModal, AddFriendModal, UpdateSteamIDModal, RemoveDataModal, RemoveFriendModal
-from app.util import command_error_embed_gen
-from app.database import get_session
-import app.command_logic as cl
+from modules.modals import RegisterModal, AddFriendModal, UpdateSteamIDModal, RemoveDataModal, RemoveFriendModal
+from modules.util import command_error_embed_gen
+from modules.database import get_session
+import modules.command_logic as cl
 
 class ExplainEmbedView(View):
     def __init__(self):

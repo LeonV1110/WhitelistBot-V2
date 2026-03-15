@@ -1,8 +1,14 @@
-from app.database import engine, Base, get_session, Permission, Role, Permission_assignment
-import app.config as cfg
+
 import uuid7
 from sqlalchemy import select, delete, tuple_
+from discord.ext.commands import Bot
+from discord import Intents
+from discord.ui import View
 
+from modules.database import engine, Base, get_session, Permission, Role, Permission_assignment
+import modules.config as cfg
+import sys
+import subprocess
 
 GAME_PERMISSIONS = [
     "startvote",
@@ -30,11 +36,13 @@ GAME_PERMISSIONS = [
 
     
 def check_setup() -> None:
+    
     Base.metadata.create_all(engine) #will setup new tables, not edit existing ones
 
     check_and_load_permissions()
     check_and_load_roles()
     check_and_load_perm_assignments()
+
 
 def check_and_load_permissions() -> None:
     with get_session() as session: # add missing permission entries
@@ -113,3 +121,37 @@ def check_and_load_perm_assignments() -> None:
                     ).in_(deletes)
                 )
             )
+
+DRIVER_PACKAGES = {
+    "postgresql+psycopg": "psycopg[binary]",
+    "postgresql+psycopg2": "psycopg2-binary",
+    "mysql+pymysql": "pymysql",
+    "mysql+mariadbconnector": "mariadb",
+}
+
+def install_package(package_name: str):
+    """Install a package via pip at runtime."""
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+def ensure_db_driver(dialect_driver: str):
+    pkg = DRIVER_PACKAGES.get(dialect_driver)
+    if pkg is None:
+        return  # SQLite or unknown, assume builtin
+    try:
+        # Try to import dynamically
+        module_name = pkg.split("[")[0]  # remove extras if any
+        __import__(module_name)
+    except ImportError:
+        print(f"Driver {module_name} not found, installing...")
+        install_package(pkg)
+
+def create_bot(views : list[View]|None = None) -> Bot:
+    if views is None:
+        views = []
+    intents = Intents.default()
+    intents.members = True
+    intents.message_content = True #TODO Likely not needed
+    bot = Bot(command_prefix='!', intents=intents)
+    for view in views:
+        bot.add_view(view)
+    return bot

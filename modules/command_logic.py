@@ -5,9 +5,9 @@ from discord import Member, Embed
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.database import Player, Whitelist_order, Role_assignment, Role, Whitelist
-from app import util, config as cfg
-from app.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
+from modules.database import Player, Whitelist_order, Role_assignment, Role, Whitelist
+from modules import util, config as cfg
+from modules.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
 
 
 def update_player_from_member(session: Session, member: Member) -> None:

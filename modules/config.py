@@ -1,6 +1,7 @@
 """Import configs into global variables"""
 import configparser
 from pathlib import Path
+from urllib.parse import quote_plus
 
 config = configparser.ConfigParser()
 
@@ -47,3 +48,27 @@ def check_config_validity() -> bool:
     if len(WHITELIST_NAMES) != whitelist_type_count or len(WHITELIST_ALLOWANCE) != whitelist_type_count:
         return False
     return True
+
+
+def get_db_string() -> str:
+    db_conf = config["DATABASE"]
+
+    # Build the driver string
+    if db_conf.get("driver"):
+        dialect_driver = f"{db_conf['dialect']}+{db_conf['driver']}"
+    else:
+        dialect_driver = db_conf["dialect"]
+
+    # SQLite is special (no host/username/password for file DB)
+    if db_conf["dialect"] == "sqlite":
+        db_url = f"sqlite:///{db_conf['dbname']}"
+    else:
+        username = quote_plus(db_conf["username"])
+        password = quote_plus(db_conf["password"])
+        host = db_conf["host"]
+        port = db_conf.get("port", "")  # optional
+        port_part = f":{port}" if port else ""
+        dbname = db_conf["dbname"]
+
+        db_url = f"{dialect_driver}://{username}:{password}@{host}{port_part}/{dbname}"
+    return db_url

@@ -1,8 +1,8 @@
 from __future__ import annotations
+from modules.config import get_db_string
 from sqlalchemy import Column, String, Integer, ForeignKey, CheckConstraint, Boolean, UniqueConstraint, create_engine, select, or_
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker, Session
-from app.exceptions import PlayerNotFound, RoleNotFound
-from app.util import get_db_string
+from modules.exceptions import PlayerNotFound, RoleNotFound
 
 Base = declarative_base()
 

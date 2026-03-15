@@ -1,14 +1,10 @@
 """A collection of utility functions"""
-from sqlalchemy import select, or_
-from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from discord import Embed, Intents
+from discord import Embed
 from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError
-from discord.ext.commands import Bot
-from discord.ui import View
 
-from app import config as cfg
-from app.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, PlayerNotFound, NoStoreID, InsufficientTier
+from modules import config as cfg
+from modules.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, NoStoreID, InsufficientTier
 
 
 
@@ -116,17 +112,3 @@ def check_integrityerror(error: IntegrityError) -> None:
         raise NoStoreID from error
     if 'whitelist_limit' in orig:
         raise InsufficientTier from error
-    
-def create_bot(views : list[View]|None = None) -> Bot:
-    if views is None:
-        views = []
-    intents = Intents.default()
-    intents.members = True
-    intents.message_content = True #TODO Likely not needed
-    bot = Bot(command_prefix='!', intents=intents)
-    for view in views:
-        bot.add_view(view)
-    return bot
-
-def get_db_string() -> str:
-    return 'sqlite:///test.db' #TODO
