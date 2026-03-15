@@ -1,4 +1,7 @@
+"""Functions for handling the initial setup, both first time setup and startup"""
 
+import sys
+import subprocess
 import uuid7
 from sqlalchemy import select, delete, tuple_
 from discord.ext.commands import Bot
@@ -7,8 +10,6 @@ from discord.ui import View
 
 from modules.database import engine, Base, get_session, Permission, Role, Permission_assignment
 import modules.config as cfg
-import sys
-import subprocess
 
 GAME_PERMISSIONS = [
     "startvote",
@@ -34,9 +35,8 @@ GAME_PERMISSIONS = [
     "canseeadminchat"
     ]
 
-    
 def check_setup() -> None:
-    
+
     Base.metadata.create_all(engine) #will setup new tables, not edit existing ones
 
     check_and_load_permissions()
@@ -67,14 +67,14 @@ def check_and_load_perm_assignments() -> None:
     with get_session() as session:
         roles = session.scalars(select(Role)).all()
         role_by_name = {r.name: r for r in roles}
-        
+
         cfg_role_names, _, _ = zip(*cfg.ROLES_CONFIG)
 
         for role_name in cfg_role_names:
             if role_name not in role_by_name:
                 raise ValueError(f'role: {role_name} was not found in the db')
                 #TODO check if needed, maybe just let it fail instead
-        
+
         permissions = session.scalars(select(Permission)).all()
         perm_by_name = {p.name: p for p in permissions}
 
