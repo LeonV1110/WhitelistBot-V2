@@ -7,14 +7,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from modules.database import Player, Whitelist_order, Role_assignment, Role, Whitelist
 from modules import util, config as cfg
-from modules.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
+#from modules.exceptions import PlayerNotFound, InsufficientTier, DuplicatePlayerPresent, MyException, DuplicatePlayerPresentSteam, DuplicatePlayerPresentDiscord
 
 
 def update_player_from_member(session: Session, member: Member) -> None:
     discordID = str(member.id)
-    tier = util.convert_role_to_tier(member.roles)
-    discord_roles = util.convert_role_to_perm(member.roles)
-    
+    tier = util.convert_discord_roles_to_tier(member.roles)
+    roles:list[Role] = util.convert_discord_roles_to_db_role(session, member.roles)
     player = Player.get_by_id(session, discordID)
 
     player.name = member.name
@@ -25,16 +24,16 @@ def update_player_from_member(session: Session, member: Member) -> None:
         whitelist_order.check_and_update_whitelist_count()
         whitelist_order.check_and_update_active()
 
+    # Remove extra roles
     db_role_assignments:list[Role_assignment] = player.role_assignments
     for db_role_assignment in list(db_role_assignments): #using list cast to create a copy
-        if db_role_assignment.role.name not in discord_roles:
+        if db_role_assignment.role not in roles:
             player.role_assignments.remove(db_role_assignment)
 
-    for role_name in discord_roles:
-        db_role_names = [x.role.name for x in db_role_assignments]
-        if role_name not in db_role_names:
-            db_role = Role.get_by_name(session, role_name)
-            player.role_assignments.append(Role_assignment(player = player, role = db_role))
+    # add new roles
+    for role in roles:
+        player.role_assignments.append(Role_assignment(player = player, role = role))
+
     try:
         session.commit()
     except IntegrityError as e:

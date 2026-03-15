@@ -1,11 +1,13 @@
 """A collection of utility functions"""
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from discord import Embed
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+from discord import Embed, Role as discord_Role
 from discord.app_commands.errors import MissingRole, MissingAnyRole, CommandInvokeError
 
 from modules import config as cfg
 from modules.exceptions import MyException, InvalidSteam64ID, InvalidDiscordID, NoStoreID, InsufficientTier
-
+from modules.database import Role as db_Role
 
 
 RERAISING = False # dev config option to make the program reraise errors for a proper stacktrace instead of replying to the user
@@ -48,34 +50,20 @@ def check_discordID(discordID: str):
         raise InvalidDiscordID("A discordID is at most 19 characters long, this one is too long.")
     return
 
-def convert_discord_role_to_roles(roles):
-    permission_roles = {}
-    for key, value in cfg.ROLE_ROLES.items():
-        permission_roles[int(value)] = cfg.ROLE_ROLES[key]
-    
-    roles.reverse()
-    for role in roles:
-        if role.id in permission_roles: #TODO
+def convert_discord_roles_to_db_role(session: Session, discord_roles: list[discord_Role]) -> list[db_Role]:
+    discord_role_ids = [role.id for role in discord_roles]
+    valid_role_names = [role_name for (role_name, role_id, _) in zip(*cfg.ROLES_CONFIG) if role_id in discord_role_ids]
+    roles = session.scalars(select(db_Role).where(db_Role.name.in_(valid_role_names))).all()
+    return roles
+
+def convert_discord_roles_to_tier(discord_roles: list[discord_Role]) -> int:
+    res = 0
+    for _, role_id, tier in zip(*cfg.WHITELIST_CONFIG):
+        if res >= tier:
             pass
-
-def convert_role_to_perm(roles): #TODO update to use new role based perms
-    permission_roles = {}
-    for key, value in cfg.ROLE_ROLES.items():
-        permission_roles[int(value)] = cfg.ROLE_ROLES[key]
-
-    roles.reverse()
-    for role in roles:
-        if role.id in permission_roles: return permission_roles[role.id]
-    return None
-
-def convert_role_to_tier(roles): #TODO update to use new number based tiers
-    whitelist_roles = {}
-    for key, value in cfg.WHITELIST_ROLES.items():
-        whitelist_roles[int(value)] = cfg.WHITELIST_NAMES[key]
-    roles.reverse()
-    for role in roles:
-        if role.id in whitelist_roles: return whitelist_roles[role.id]
-    return None
+        if role_id in discord_roles:
+            res = tier
+    return res
 
 def command_error_embed_gen(error: Exception) -> Embed:
     if isinstance(error, CommandInvokeError):

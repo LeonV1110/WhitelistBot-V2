@@ -22,16 +22,20 @@ WHITELIST_LINK = config['SETTINGS']['WHITELIST_LINK']
 ADDITIONAL_PERMISSIONS = [perm for perm in config['SETTINGS']['PERMISSIONS'].split(',')]
 ROLES_CONFIG = []
 
-for role_name, value in config["roles"].items():
+for role_name, value in config["PERMISSION_ROLES"].items():
     role_id_str, perms_str = value.split(",", 1)
     role_id = int(role_id_str.strip())
     perms = [p.strip() for p in perms_str.split("|")]
 
     ROLES_CONFIG.append((role_name, role_id, perms))
 
-WHITELIST_ROLES = config['WHITELIST_ROLES']
-WHITELIST_NAMES = config['WHITELIST_NAMES']
-WHITELIST_ALLOWANCE = config['WHITELIST_ALLOWANCE']
+WHITELIST_CONFIG = []
+
+for tier_name, value in config['WHITELIST_ROLES'].items():
+    role_id_str, tier_str = value.split(",", 1)
+    role_id = int(role_id_str.strip())
+    tier = int(tier_str.strip())
+    WHITELIST_CONFIG.append((tier_name, role_id, tier))
 
 EXPLAIN_EMBED_ROLE = int(config['DISCORD_COMMAND_PERMISSIONS']['EXPLAIN_EMBED'])
 DELETE_ROLE = int(config['DISCORD_COMMAND_PERMISSIONS']['DELETE'])
@@ -43,10 +47,6 @@ def check_config_validity() -> bool:
     for config in [TOKEN, GUILD_IDS, BOTNAME, WHITELIST_LINK, DATABASEUSER, DATABASEPSW, DATABASEHOST, DATABASEPORT, DATABASENAME]:
         if config == 'TODO':
             return False
-
-    whitelist_type_count = len(WHITELIST_ROLES)
-    if len(WHITELIST_NAMES) != whitelist_type_count or len(WHITELIST_ALLOWANCE) != whitelist_type_count:
-        return False
     return True
 
 
