@@ -14,7 +14,7 @@ RERAISING = False # dev config option to make the program reraise errors for a p
 #TODO should be possible to have both
 
 
-def check_steam64_id(steam64ID: str):
+def check_steam64_id(steam64ID: str) -> None:
     #check if int
     str(steam64ID)
     try:
@@ -32,13 +32,13 @@ def check_steam64_id(steam64ID: str):
         raise InvalidSteam64ID("This is not a valid steam64ID, as it is shorter than 17 characters.")
     if (len(steam64ID) > 17):
         raise InvalidSteam64ID("This is not a valid steam64ID, as it is longer than 17 characters.")
-    return 
+    return
 
-def check_eos_id(eos_id: str):
+def check_eos_id(eos_id: str) -> None:
     #TODO check eos id for validity
     return
 
-def check_discordID(discordID: str):
+def check_discordID(discordID: str) -> None:
     str(discordID)
     try:
         int(discordID)
