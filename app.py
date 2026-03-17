@@ -1,7 +1,6 @@
 """Main entry into the discordbot"""
 
 from modules import config as cfg, discord_events, db_events
-from modules.setup import create_bot, check_setup, ensure_db_driver
 from modules.database import init_db
 
 if __name__ == "__main__":
