@@ -9,6 +9,7 @@ if __name__ == "__main__":
         raise ValueError('Config file is invalid.')
 
     init_db(cfg.get_db_string())
+    from modules.setup import create_bot, check_setup, ensure_db_driver
     ensure_db_driver(cfg.get_db_string().split(':')[0])
     check_setup()
 

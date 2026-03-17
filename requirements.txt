@@ -1,4 +1,4 @@
 discord.py==2.5.2
 pandas==2.3.1
 SQLalchemy==2.0.48
-uuid7==1.1.0
+uuid7-standard==1.1.0

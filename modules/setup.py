@@ -47,18 +47,27 @@ def check_setup() -> None:
 def check_and_load_permissions() -> None:
     with get_session() as session: # add missing permission entries
         permission_names = GAME_PERMISSIONS + cfg.ADDITIONAL_PERMISSIONS
-        perms = [Permission(permission_id = uuid7.create(), name = perm_name) for perm_name in permission_names]
-        db_perms = session.scalar(select(Permission.name)).all()
-        missing_perms = [perm for perm in perms if perm.name not in db_perms]
+        perms = [Permission(permission_id = str(uuid7.create()), name = perm_name) for perm_name in permission_names]
+        db_perms_scaler = session.scalar(select(Permission.name))
+        if db_perms_scaler is None:
+            missing_perms = perms
+        else:
+            db_perms = db_perms_scaler.all()
+            missing_perms = [perm for perm in perms if perm.name not in db_perms]
         session.add_all(missing_perms)
         session.commit()
 
 
 def check_and_load_roles() -> None:
     with get_session() as session:
-        roles = []
-        db_roles = session.scalar(select(Role.name)).all()
-        missing_roles = [role for role in roles if role.name not in db_roles]
+        role_names, _, _ = zip(*cfg.ROLES_CONFIG)
+        db_roles_scalar = session.scalar(select(Role.name))
+        if db_roles_scalar is None:
+            missing_role_names = role_names
+        else:
+            db_roles = db_roles_scalar.all()
+            missing_role_names = [role for role in role_names if role.name not in db_roles]
+        missing_roles = [Role(role_id = str(uuid7.create()), name = role_name) for role_name in missing_role_names]
         session.add_all(missing_roles)
         session.commit()
 
@@ -68,7 +77,7 @@ def check_and_load_perm_assignments() -> None:
         roles = session.scalars(select(Role)).all()
         role_by_name = {r.name: r for r in roles}
 
-        cfg_role_names, _, _ = zip(*cfg.ROLES_CONFIG)
+        cfg_role_names, _, cfg_role_perms = zip(*cfg.ROLES_CONFIG)
 
         for role_name in cfg_role_names:
             if role_name not in role_by_name:
@@ -87,7 +96,7 @@ def check_and_load_perm_assignments() -> None:
         inserts = []
         deletes = []
 
-        for role_name, _, perms in zip(cfg.ROLES_CONFIG):
+        for role_name, perms in zip(cfg_role_names, cfg_role_perms):
             role = role_by_name[role_name]
             role_id = role.role_id
 
