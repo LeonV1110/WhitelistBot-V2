@@ -111,7 +111,7 @@ def connect_database() -> pymysql.connections.Connection:
 def create_bot(views : list[View] = []) -> Bot:
     intents = Intents.default()
     intents.members = True
-    intents.message_content = True #TODO Likely not needed
+    intents.message_content = False #TODO Likely not needed
     bot = Bot(command_prefix='!', intents=intents)
     for view in views:
         bot.add_view(view)
